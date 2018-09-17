@@ -5,22 +5,21 @@
 #ifndef FLUTTER_LIB_UI_SEMANTICS_SEMANTICS_UPDATE_BUILDER_H_
 #define FLUTTER_LIB_UI_SEMANTICS_SEMANTICS_UPDATE_BUILDER_H_
 
+#include "flutter/lib/ui/dart_wrapper.h"
 #include "flutter/lib/ui/semantics/semantics_update.h"
-#include "lib/tonic/dart_wrappable.h"
-#include "lib/tonic/typed_data/float64_list.h"
-#include "lib/tonic/typed_data/int32_list.h"
+#include "third_party/tonic/typed_data/float64_list.h"
+#include "third_party/tonic/typed_data/int32_list.h"
 
 namespace blink {
 
 class SemanticsUpdateBuilder
-    : public fxl::RefCountedThreadSafe<SemanticsUpdateBuilder>,
-      public tonic::DartWrappable {
+    : public RefCountedDartWrappable<SemanticsUpdateBuilder> {
   DEFINE_WRAPPERTYPEINFO();
-  FRIEND_MAKE_REF_COUNTED(SemanticsUpdateBuilder);
+  FML_FRIEND_MAKE_REF_COUNTED(SemanticsUpdateBuilder);
 
  public:
-  static fxl::RefPtr<SemanticsUpdateBuilder> create() {
-    return fxl::MakeRefCounted<SemanticsUpdateBuilder>();
+  static fml::RefPtr<SemanticsUpdateBuilder> create() {
+    return fml::MakeRefCounted<SemanticsUpdateBuilder>();
   }
 
   ~SemanticsUpdateBuilder() override;
@@ -30,6 +29,8 @@ class SemanticsUpdateBuilder
                   int actions,
                   int textSelectionBase,
                   int textSelectionExtent,
+                  int scrollChildren,
+                  int scrollIndex,
                   double scrollPosition,
                   double scrollExtentMax,
                   double scrollExtentMin,
@@ -45,9 +46,15 @@ class SemanticsUpdateBuilder
                   int textDirection,
                   const tonic::Float64List& transform,
                   const tonic::Int32List& childrenInTraversalOrder,
-                  const tonic::Int32List& childrenInHitTestOrder);
+                  const tonic::Int32List& childrenInHitTestOrder,
+                  const tonic::Int32List& customAccessibilityActions);
 
-  fxl::RefPtr<SemanticsUpdate> build();
+  void updateCustomAction(int id,
+                          std::string label,
+                          std::string hint,
+                          int overrideId);
+
+  fml::RefPtr<SemanticsUpdate> build();
 
   static void RegisterNatives(tonic::DartLibraryNatives* natives);
 
@@ -55,6 +62,7 @@ class SemanticsUpdateBuilder
   explicit SemanticsUpdateBuilder();
 
   SemanticsNodeUpdates nodes_;
+  CustomAccessibilityActionUpdates actions_;
 };
 
 }  // namespace blink

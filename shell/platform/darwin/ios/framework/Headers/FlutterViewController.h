@@ -15,9 +15,10 @@
 #include "FlutterTexture.h"
 
 FLUTTER_EXPORT
-@interface FlutterViewController : UIViewController<FlutterBinaryMessenger, FlutterTextureRegistry, FlutterPluginRegistry>
+@interface FlutterViewController
+    : UIViewController <FlutterBinaryMessenger, FlutterTextureRegistry, FlutterPluginRegistry>
 
-- (instancetype)initWithProject:(FlutterDartProject*)project
+- (instancetype)initWithProject:(FlutterDartProject*)projectOrNil
                         nibName:(NSString*)nibNameOrNil
                          bundle:(NSBundle*)nibBundleOrNil NS_DESIGNATED_INITIALIZER;
 
@@ -51,6 +52,20 @@ FLUTTER_EXPORT
 - (void)setInitialRoute:(NSString*)route;
 
 - (id<FlutterPluginRegistry>)pluginRegistry;
+
+/**
+ Specifies the view to use as a splash screen. Flutter's rendering is asynchronous, so the first
+ frame rendered by the Flutter application might not immediately appear when the Flutter view is
+ initially placed in the view hierarchy. The splash screen view will be used as a replacement
+ until the first frame is rendered.
+
+ The view used should be appropriate for multiple sizes; an autoresizing mask to have a flexible
+ width and height will be applied automatically.
+
+ If not specified, uses a view generated from `UILaunchStoryboardName` from the main bundle's
+ `Info.plist` file.
+ */
+@property(strong, nonatomic) UIView* splashScreenView;
 
 @end
 

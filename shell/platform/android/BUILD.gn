@@ -60,7 +60,6 @@ shared_library("flutter_shell_native") {
     "$flutter_root/lib/ui",
     "$flutter_root/runtime",
     "$flutter_root/shell/common",
-    "//garnet/public/lib/fxl",
     "//third_party/skia",
     "//third_party/skia:gpu",
   ]
@@ -108,8 +107,8 @@ java_library("flutter_shell_java") {
     "io/flutter/plugin/common/BasicMessageChannel.java",
     "io/flutter/plugin/common/BinaryCodec.java",
     "io/flutter/plugin/common/BinaryMessenger.java",
-    "io/flutter/plugin/common/FlutterException.java",
     "io/flutter/plugin/common/EventChannel.java",
+    "io/flutter/plugin/common/FlutterException.java",
     "io/flutter/plugin/common/JSONMessageCodec.java",
     "io/flutter/plugin/common/JSONMethodCodec.java",
     "io/flutter/plugin/common/JSONUtil.java",
@@ -124,11 +123,20 @@ java_library("flutter_shell_java") {
     "io/flutter/plugin/editing/InputConnectionAdaptor.java",
     "io/flutter/plugin/editing/TextInputPlugin.java",
     "io/flutter/plugin/platform/PlatformPlugin.java",
+    "io/flutter/plugin/platform/PlatformView.java",
+    "io/flutter/plugin/platform/PlatformViewFactory.java",
+    "io/flutter/plugin/platform/PlatformViewRegistry.java",
+    "io/flutter/plugin/platform/PlatformViewRegistryImpl.java",
+    "io/flutter/plugin/platform/PlatformViewsController.java",
+    "io/flutter/plugin/platform/SingleViewPresentation.java",
+    "io/flutter/plugin/platform/VirtualDisplayController.java",
     "io/flutter/util/PathUtils.java",
     "io/flutter/util/Preconditions.java",
     "io/flutter/view/AccessibilityBridge.java",
+    "io/flutter/view/FlutterCallbackInformation.java",
     "io/flutter/view/FlutterMain.java",
     "io/flutter/view/FlutterNativeView.java",
+    "io/flutter/view/FlutterRunArguments.java",
     "io/flutter/view/FlutterView.java",
     "io/flutter/view/ResourceCleaner.java",
     "io/flutter/view/ResourceExtractor.java",
@@ -154,7 +162,7 @@ copy("flutter_shell_assets") {
   visibility = [ ":*" ]
 
   sources = [
-    "//third_party/icu/android/icudtl.dat",
+    "//third_party/icu/flutter/icudtl.dat",
   ]
 
   outputs = [

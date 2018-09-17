@@ -66,29 +66,44 @@ class SceneBuilder extends NativeFieldWrapperClass2 {
   ///
   /// Rasterization outside the given rectangle is discarded.
   ///
-  /// See [pop] for details about the operation stack.
-  void pushClipRect(Rect rect) {
-    _pushClipRect(rect.left, rect.right, rect.top, rect.bottom);
+  /// See [pop] for details about the operation stack, and [Clip] for different clip modes.
+  /// By default, the clip will be anti-aliased (clip = [Clip.antiAlias]).
+  void pushClipRect(Rect rect, {Clip clipBehavior = Clip.antiAlias}) {
+    assert(clipBehavior != null);
+    assert(clipBehavior != Clip.none);
+    _pushClipRect(rect.left, rect.right, rect.top, rect.bottom, clipBehavior.index);
   }
   void _pushClipRect(double left,
                      double right,
                      double top,
-                     double bottom) native 'SceneBuilder_pushClipRect';
+                     double bottom,
+                     int clipBehavior) native 'SceneBuilder_pushClipRect';
 
   /// Pushes a rounded-rectangular clip operation onto the operation stack.
   ///
   /// Rasterization outside the given rounded rectangle is discarded.
   ///
-  /// See [pop] for details about the operation stack.
-  void pushClipRRect(RRect rrect) => _pushClipRRect(rrect._value);
-  void _pushClipRRect(Float32List rrect) native 'SceneBuilder_pushClipRRect';
+  /// See [pop] for details about the operation stack, and [Clip] for different clip modes.
+  /// By default, the clip will be anti-aliased (clip = [Clip.antiAlias]).
+  void pushClipRRect(RRect rrect, {Clip clipBehavior = Clip.antiAlias}) {
+    assert(clipBehavior != null);
+    assert(clipBehavior != Clip.none);
+    _pushClipRRect(rrect._value, clipBehavior.index);
+  }
+  void _pushClipRRect(Float32List rrect, int clipBehavior) native 'SceneBuilder_pushClipRRect';
 
   /// Pushes a path clip operation onto the operation stack.
   ///
   /// Rasterization outside the given path is discarded.
   ///
-  /// See [pop] for details about the operation stack.
-  void pushClipPath(Path path) native 'SceneBuilder_pushClipPath';
+  /// See [pop] for details about the operation stack. See [Clip] for different clip modes.
+  /// By default, the clip will be anti-aliased (clip = [Clip.antiAlias]).
+  void pushClipPath(Path path, {Clip clipBehavior = Clip.antiAlias}) {
+    assert(clipBehavior != null);
+    assert(clipBehavior != Clip.none);
+    _pushClipPath(path, clipBehavior.index);
+  }
+  void _pushClipPath(Path path, int clipBehavior) native 'SceneBuilder_pushClipPath';
 
   /// Pushes an opacity operation onto the operation stack.
   ///
@@ -143,16 +158,20 @@ class SceneBuilder extends NativeFieldWrapperClass2 {
   /// Pushes a physical layer operation for an arbitrary shape onto the
   /// operation stack.
   ///
-  /// Rasterization will be clipped to the given shape defined by [path]. If
-  /// [elevation] is greater than 0.0, then a shadow is drawn around the layer.
-  /// [shadowColor] defines the color of the shadow if present and [color] defines the 
+  /// By default, the layer's content will not be clipped (clip = [Clip.none]).
+  /// If clip equals [Clip.hardEdge], [Clip.antiAlias], or [Clip.antiAliasWithSaveLayer],
+  /// then the content is clipped to the given shape defined by [path].
+  ///
+  /// If [elevation] is greater than 0.0, then a shadow is drawn around the layer.
+  /// [shadowColor] defines the color of the shadow if present and [color] defines the
   /// color of the layer background.
   ///
-  /// See [pop] for details about the operation stack.
-  void pushPhysicalShape({ Path path, double elevation, Color color, Color shadowColor}) {
-    _pushPhysicalShape(path, elevation, color.value, shadowColor?.value ?? 0xFF000000);
+  /// See [pop] for details about the operation stack, and [Clip] for different clip modes.
+  // ignore: deprecated_member_use
+  void pushPhysicalShape({ Path path, double elevation, Color color, Color shadowColor, Clip clipBehavior = defaultClipBehavior}) {
+    _pushPhysicalShape(path, elevation, color.value, shadowColor?.value ?? 0xFF000000, clipBehavior.index);
   }
-  void _pushPhysicalShape(Path path, double elevation, int color, int shadowColor) native 
+  void _pushPhysicalShape(Path path, double elevation, int color, int shadowColor, int clipBehavior) native
     'SceneBuilder_pushPhysicalShape';
 
   /// Ends the effect of the most recently pushed operation.
@@ -216,11 +235,19 @@ class SceneBuilder extends NativeFieldWrapperClass2 {
   /// Adds a backend texture to the scene.
   ///
   /// The texture is scaled to the given size and rasterized at the given offset.
-  void addTexture(int textureId, { Offset offset: Offset.zero, double width: 0.0, double height: 0.0 }) {
+  ///
+  /// If `freeze` is true the texture that is added to the scene will not
+  /// be updated with new frames. `freeze` is used when resizing an embedded
+  /// Android view: When resizing an Android view there is a short period during
+  /// which the framework cannot tell if the newest texture frame has the
+  /// previous or new size, to workaround this the framework "freezes" the
+  /// texture just before resizing the Android view and unfreezes it when it is
+  /// certain that a frame with the new size is ready.
+  void addTexture(int textureId, { Offset offset: Offset.zero, double width: 0.0, double height: 0.0 , bool freeze: false}) {
     assert(offset != null, 'Offset argument was null');
-    _addTexture(offset.dx, offset.dy, width, height, textureId);
+    _addTexture(offset.dx, offset.dy, width, height, textureId, freeze);
   }
-  void _addTexture(double dx, double dy, double width, double height, int textureId) native 'SceneBuilder_addTexture';
+  void _addTexture(double dx, double dy, double width, double height, int textureId, bool freeze) native 'SceneBuilder_addTexture';
 
   /// (Fuchsia-only) Adds a scene rendered by another application to the scene
   /// for this application.

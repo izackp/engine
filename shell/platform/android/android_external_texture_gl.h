@@ -19,7 +19,9 @@ class AndroidExternalTextureGL : public flow::Texture {
 
   ~AndroidExternalTextureGL() override;
 
-  virtual void Paint(SkCanvas& canvas, const SkRect& bounds) override;
+  virtual void Paint(SkCanvas& canvas,
+                     const SkRect& bounds,
+                     bool freeze) override;
 
   virtual void OnGrContextCreated() override;
 
@@ -48,7 +50,7 @@ class AndroidExternalTextureGL : public flow::Texture {
 
   SkMatrix transform;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(AndroidExternalTextureGL);
+  FML_DISALLOW_COPY_AND_ASSIGN(AndroidExternalTextureGL);
 };
 
 }  // namespace shell

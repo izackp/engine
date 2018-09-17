@@ -9,11 +9,11 @@
 #include <utility>
 
 #include "flutter/common/task_runners.h"
+#include "flutter/fml/synchronization/waitable_event.h"
 #include "flutter/fml/trace_event.h"
 #include "flutter/shell/common/io_manager.h"
 #include "flutter/shell/platform/darwin/ios/framework/Source/vsync_waiter_ios.h"
 #include "flutter/shell/platform/darwin/ios/ios_external_texture_gl.h"
-#include "lib/fxl/synchronization/waitable_event.h"
 
 namespace shell {
 
@@ -21,23 +21,19 @@ PlatformViewIOS::PlatformViewIOS(PlatformView::Delegate& delegate,
                                  blink::TaskRunners task_runners,
                                  FlutterViewController* owner_controller,
                                  FlutterView* owner_view)
-    : PlatformView(delegate, std::move(task_runners)),
+    : HeadlessPlatformViewIOS(delegate, std::move(task_runners)),
       owner_controller_(owner_controller),
       owner_view_(owner_view),
       ios_surface_(owner_view_.createSurface) {
-  FXL_DCHECK(ios_surface_ != nullptr);
-  FXL_DCHECK(owner_controller_ != nullptr);
-  FXL_DCHECK(owner_view_ != nullptr);
+  FML_DCHECK(ios_surface_ != nullptr);
+  FML_DCHECK(owner_controller_ != nullptr);
+  FML_DCHECK(owner_view_ != nullptr);
 }
 
 PlatformViewIOS::~PlatformViewIOS() = default;
 
 FlutterViewController* PlatformViewIOS::GetOwnerViewController() const {
   return owner_controller_;
-}
-
-PlatformMessageRouter& PlatformViewIOS::GetPlatformMessageRouter() {
-  return platform_message_router_;
 }
 
 void PlatformViewIOS::RegisterExternalTexture(int64_t texture_id,
@@ -53,7 +49,7 @@ std::unique_ptr<Surface> PlatformViewIOS::CreateRenderingSurface() {
 // |shell::PlatformView|
 sk_sp<GrContext> PlatformViewIOS::CreateResourceContext() const {
   if (!ios_surface_->ResourceContextMakeCurrent()) {
-    FXL_DLOG(INFO) << "Could not make resource context current on IO thread. Async texture uploads "
+    FML_DLOG(INFO) << "Could not make resource context current on IO thread. Async texture uploads "
                       "will be disabled.";
     return nullptr;
   }
@@ -71,16 +67,17 @@ void PlatformViewIOS::SetSemanticsEnabled(bool enabled) {
   PlatformView::SetSemanticsEnabled(enabled);
 }
 
-// |shell::PlatformView|
-void PlatformViewIOS::UpdateSemantics(blink::SemanticsNodeUpdates update) {
-  if (accessibility_bridge_) {
-    accessibility_bridge_->UpdateSemantics(std::move(update));
-  }
+// |shell:PlatformView|
+void PlatformViewIOS::SetAccessibilityFeatures(int32_t flags) {
+  PlatformView::SetAccessibilityFeatures(flags);
 }
 
 // |shell::PlatformView|
-void PlatformViewIOS::HandlePlatformMessage(fxl::RefPtr<blink::PlatformMessage> message) {
-  platform_message_router_.HandlePlatformMessage(std::move(message));
+void PlatformViewIOS::UpdateSemantics(blink::SemanticsNodeUpdates update,
+                                      blink::CustomAccessibilityActionUpdates actions) {
+  if (accessibility_bridge_) {
+    accessibility_bridge_->UpdateSemantics(std::move(update), std::move(actions));
+  }
 }
 
 // |shell::PlatformView|

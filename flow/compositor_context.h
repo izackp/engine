@@ -11,7 +11,7 @@
 #include "flutter/flow/instrumentation.h"
 #include "flutter/flow/raster_cache.h"
 #include "flutter/flow/texture.h"
-#include "lib/fxl/macros.h"
+#include "flutter/fml/macros.h"
 #include "third_party/skia/include/core/SkCanvas.h"
 #include "third_party/skia/include/core/SkPictureRecorder.h"
 
@@ -26,6 +26,7 @@ class CompositorContext {
     ScopedFrame(CompositorContext& context,
                 GrContext* gr_context,
                 SkCanvas* canvas,
+                const SkMatrix& root_surface_transformation,
                 bool instrumentation_enabled);
 
     virtual ~ScopedFrame();
@@ -33,6 +34,10 @@ class CompositorContext {
     SkCanvas* canvas() { return canvas_; }
 
     CompositorContext& context() const { return context_; }
+
+    const SkMatrix& root_surface_transformation() const {
+      return root_surface_transformation_;
+    }
 
     GrContext* gr_context() const { return gr_context_; }
 
@@ -42,9 +47,10 @@ class CompositorContext {
     CompositorContext& context_;
     GrContext* gr_context_;
     SkCanvas* canvas_;
+    const SkMatrix& root_surface_transformation_;
     const bool instrumentation_enabled_;
 
-    FXL_DISALLOW_COPY_AND_ASSIGN(ScopedFrame);
+    FML_DISALLOW_COPY_AND_ASSIGN(ScopedFrame);
   };
 
   CompositorContext();
@@ -54,6 +60,7 @@ class CompositorContext {
   virtual std::unique_ptr<ScopedFrame> AcquireFrame(
       GrContext* gr_context,
       SkCanvas* canvas,
+      const SkMatrix& root_surface_transformation,
       bool instrumentation_enabled);
 
   void OnGrContextCreated();
@@ -81,7 +88,7 @@ class CompositorContext {
 
   void EndFrame(ScopedFrame& frame, bool enable_instrumentation);
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(CompositorContext);
+  FML_DISALLOW_COPY_AND_ASSIGN(CompositorContext);
 };
 
 }  // namespace flow

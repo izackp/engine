@@ -8,17 +8,17 @@
 #include <utility>
 
 #include "flutter/common/settings.h"
-#include "flutter/glue/trace_event.h"
+#include "flutter/fml/eintr_wrapper.h"
+#include "flutter/fml/file.h"
+#include "flutter/fml/make_copyable.h"
+#include "flutter/fml/paths.h"
+#include "flutter/fml/trace_event.h"
+#include "flutter/fml/unique_fd.h"
 #include "flutter/lib/snapshot/snapshot.h"
 #include "flutter/lib/ui/text/font_collection.h"
 #include "flutter/shell/common/animator.h"
 #include "flutter/shell/common/platform_view.h"
 #include "flutter/shell/common/shell.h"
-#include "lib/fxl/files/eintr_wrapper.h"
-#include "lib/fxl/files/file.h"
-#include "lib/fxl/files/path.h"
-#include "lib/fxl/files/unique_fd.h"
-#include "lib/fxl/functional/make_copyable.h"
 #include "third_party/rapidjson/rapidjson/document.h"
 #include "third_party/skia/include/core/SkCanvas.h"
 #include "third_party/skia/include/core/SkPictureRecorder.h"
@@ -37,17 +37,16 @@ static constexpr char kSettingsChannel[] = "flutter/settings";
 
 Engine::Engine(Delegate& delegate,
                blink::DartVM& vm,
-               fxl::RefPtr<blink::DartSnapshot> isolate_snapshot,
-               fxl::RefPtr<blink::DartSnapshot> shared_snapshot,
+               fml::RefPtr<blink::DartSnapshot> isolate_snapshot,
+               fml::RefPtr<blink::DartSnapshot> shared_snapshot,
                blink::TaskRunners task_runners,
                blink::Settings settings,
                std::unique_ptr<Animator> animator,
                fml::WeakPtr<GrContext> resource_context,
-               fxl::RefPtr<flow::SkiaUnrefQueue> unref_queue)
+               fml::RefPtr<flow::SkiaUnrefQueue> unref_queue)
     : delegate_(delegate),
       settings_(std::move(settings)),
       animator_(std::move(animator)),
-      load_script_error_(tonic::kNoError),
       activity_running_(false),
       have_surface_(false),
       weak_factory_(this) {
@@ -98,9 +97,10 @@ bool Engine::UpdateAssetManager(
 bool Engine::Restart(RunConfiguration configuration) {
   TRACE_EVENT0("flutter", "Engine::Restart");
   if (!configuration.IsValid()) {
-    FXL_LOG(ERROR) << "Engine run configuration was invalid.";
+    FML_LOG(ERROR) << "Engine run configuration was invalid.";
     return false;
   }
+  delegate_.OnPreEngineRestart();
   runtime_controller_ = runtime_controller_->Clone();
   UpdateAssetManager(nullptr);
   return Run(std::move(configuration));
@@ -108,16 +108,17 @@ bool Engine::Restart(RunConfiguration configuration) {
 
 bool Engine::Run(RunConfiguration configuration) {
   if (!configuration.IsValid()) {
-    FXL_LOG(ERROR) << "Engine run configuration was invalid.";
+    FML_LOG(ERROR) << "Engine run configuration was invalid.";
     return false;
   }
 
   if (!PrepareAndLaunchIsolate(std::move(configuration))) {
-    FXL_LOG(ERROR) << "Engine not prepare and launch isolate.";
+    FML_LOG(ERROR) << "Engine not prepare and launch isolate.";
     return false;
   }
 
-  auto isolate = runtime_controller_->GetRootIsolate();
+  std::shared_ptr<blink::DartIsolate> isolate =
+      runtime_controller_->GetRootIsolate().lock();
 
   bool isolate_running =
       isolate && isolate->GetPhase() == blink::DartIsolate::Phase::Running;
@@ -145,22 +146,35 @@ bool Engine::PrepareAndLaunchIsolate(RunConfiguration configuration) {
 
   auto isolate_configuration = configuration.TakeIsolateConfiguration();
 
-  auto isolate = runtime_controller_->GetRootIsolate();
+  std::shared_ptr<blink::DartIsolate> isolate =
+      runtime_controller_->GetRootIsolate().lock();
 
-  if (!isolate_configuration->PrepareIsolate(isolate)) {
-    FXL_LOG(ERROR) << "Could not prepare to run the isolate.";
+  if (!isolate) {
     return false;
   }
 
-  if (!isolate->Run(configuration.GetEntrypoint())) {
-    FXL_LOG(ERROR) << "Could not run the isolate.";
+  if (!isolate_configuration->PrepareIsolate(*isolate)) {
+    FML_LOG(ERROR) << "Could not prepare to run the isolate.";
     return false;
+  }
+
+  if (configuration.GetEntrypointLibrary().empty()) {
+    if (!isolate->Run(configuration.GetEntrypoint())) {
+      FML_LOG(ERROR) << "Could not run the isolate.";
+      return false;
+    }
+  } else {
+    if (!isolate->RunFromLibrary(configuration.GetEntrypointLibrary(),
+                                 configuration.GetEntrypoint())) {
+      FML_LOG(ERROR) << "Could not run the isolate.";
+      return false;
+    }
   }
 
   return true;
 }
 
-void Engine::BeginFrame(fxl::TimePoint frame_time) {
+void Engine::BeginFrame(fml::TimePoint frame_time) {
   TRACE_EVENT0("flutter", "Engine::BeginFrame");
   runtime_controller_->BeginFrame(frame_time);
 }
@@ -190,10 +204,6 @@ tonic::DartErrorHandleType Engine::GetUIIsolateLastError() {
   return runtime_controller_->GetLastError();
 }
 
-tonic::DartErrorHandleType Engine::GetLoadScriptError() {
-  return load_script_error_;
-}
-
 void Engine::OnOutputSurfaceCreated() {
   have_surface_ = true;
   StartAnimatorIfPossible();
@@ -220,7 +230,7 @@ void Engine::SetViewportMetrics(const blink::ViewportMetrics& metrics) {
 }
 
 void Engine::DispatchPlatformMessage(
-    fxl::RefPtr<blink::PlatformMessage> message) {
+    fml::RefPtr<blink::PlatformMessage> message) {
   if (message->channel() == kLifecycleChannel) {
     if (HandleLifecyclePlatformMessage(message.get()))
       return;
@@ -265,7 +275,7 @@ bool Engine::HandleLifecyclePlatformMessage(blink::PlatformMessage* message) {
 }
 
 bool Engine::HandleNavigationPlatformMessage(
-    fxl::RefPtr<blink::PlatformMessage> message) {
+    fml::RefPtr<blink::PlatformMessage> message) {
   const auto& data = message->data();
 
   rapidjson::Document document;
@@ -331,6 +341,10 @@ void Engine::SetSemanticsEnabled(bool enabled) {
   runtime_controller_->SetSemanticsEnabled(enabled);
 }
 
+void Engine::SetAccessibilityFeatures(int32_t flags) {
+  runtime_controller_->SetAccessibilityFeatures(flags);
+}
+
 void Engine::StopAnimator() {
   animator_->Stop();
 }
@@ -364,16 +378,17 @@ void Engine::Render(std::unique_ptr<flow::LayerTree> layer_tree) {
   animator_->Render(std::move(layer_tree));
 }
 
-void Engine::UpdateSemantics(blink::SemanticsNodeUpdates update) {
-  delegate_.OnEngineUpdateSemantics(*this, std::move(update));
+void Engine::UpdateSemantics(blink::SemanticsNodeUpdates update,
+                             blink::CustomAccessibilityActionUpdates actions) {
+  delegate_.OnEngineUpdateSemantics(std::move(update), std::move(actions));
 }
 
 void Engine::HandlePlatformMessage(
-    fxl::RefPtr<blink::PlatformMessage> message) {
+    fml::RefPtr<blink::PlatformMessage> message) {
   if (message->channel() == kAssetChannel) {
     HandleAssetPlatformMessage(std::move(message));
   } else {
-    delegate_.OnEngineHandlePlatformMessage(*this, std::move(message));
+    delegate_.OnEngineHandlePlatformMessage(std::move(message));
   }
 }
 
@@ -382,8 +397,8 @@ blink::FontCollection& Engine::GetFontCollection() {
 }
 
 void Engine::HandleAssetPlatformMessage(
-    fxl::RefPtr<blink::PlatformMessage> message) {
-  fxl::RefPtr<blink::PlatformMessageResponse> response = message->response();
+    fml::RefPtr<blink::PlatformMessage> message) {
+  fml::RefPtr<blink::PlatformMessageResponse> response = message->response();
   if (!response) {
     return;
   }

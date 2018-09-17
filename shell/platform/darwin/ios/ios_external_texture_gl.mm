@@ -19,12 +19,12 @@ namespace shell {
 IOSExternalTextureGL::IOSExternalTextureGL(int64_t textureId,
                                            NSObject<FlutterTexture>* externalTexture)
     : Texture(textureId), external_texture_(externalTexture) {
-  FXL_DCHECK(external_texture_);
+  FML_DCHECK(external_texture_);
 }
 
 IOSExternalTextureGL::~IOSExternalTextureGL() = default;
 
-void IOSExternalTextureGL::Paint(SkCanvas& canvas, const SkRect& bounds) {
+void IOSExternalTextureGL::Paint(SkCanvas& canvas, const SkRect& bounds, bool freeze) {
   if (!cache_ref_) {
     CVOpenGLESTextureCacheRef cache;
     CVReturn err = CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, NULL,
@@ -32,23 +32,25 @@ void IOSExternalTextureGL::Paint(SkCanvas& canvas, const SkRect& bounds) {
     if (err == noErr) {
       cache_ref_.Reset(cache);
     } else {
-      FXL_LOG(WARNING) << "Failed to create GLES texture cache: " << err;
+      FML_LOG(WARNING) << "Failed to create GLES texture cache: " << err;
       return;
     }
   }
   fml::CFRef<CVPixelBufferRef> bufferRef;
-  bufferRef.Reset([external_texture_ copyPixelBuffer]);
-  if (bufferRef != nullptr) {
-    CVOpenGLESTextureRef texture;
-    CVReturn err = CVOpenGLESTextureCacheCreateTextureFromImage(
-        kCFAllocatorDefault, cache_ref_, bufferRef, nullptr, GL_TEXTURE_2D, GL_RGBA,
-        static_cast<int>(CVPixelBufferGetWidth(bufferRef)),
-        static_cast<int>(CVPixelBufferGetHeight(bufferRef)), GL_BGRA, GL_UNSIGNED_BYTE, 0,
-        &texture);
-    texture_ref_.Reset(texture);
-    if (err != noErr) {
-      FXL_LOG(WARNING) << "Could not create texture from pixel buffer: " << err;
-      return;
+  if (!freeze) {
+    bufferRef.Reset([external_texture_ copyPixelBuffer]);
+    if (bufferRef != nullptr) {
+      CVOpenGLESTextureRef texture;
+      CVReturn err = CVOpenGLESTextureCacheCreateTextureFromImage(
+          kCFAllocatorDefault, cache_ref_, bufferRef, nullptr, GL_TEXTURE_2D, GL_RGBA,
+          static_cast<int>(CVPixelBufferGetWidth(bufferRef)),
+          static_cast<int>(CVPixelBufferGetHeight(bufferRef)), GL_BGRA, GL_UNSIGNED_BYTE, 0,
+          &texture);
+      texture_ref_.Reset(texture);
+      if (err != noErr) {
+        FML_LOG(WARNING) << "Could not create texture from pixel buffer: " << err;
+        return;
+      }
     }
   }
   if (!texture_ref_) {

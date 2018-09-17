@@ -28,6 +28,7 @@ source_set("flutter_channels") {
     "ios/framework/Headers/FlutterBinaryMessenger.h",
     "ios/framework/Headers/FlutterChannels.h",
     "ios/framework/Headers/FlutterCodecs.h",
+    "ios/framework/Headers/FlutterMacros.h",
     "ios/framework/Source/FlutterChannels.mm",
     "ios/framework/Source/FlutterCodecs.mm",
     "ios/framework/Source/FlutterStandardCodec.mm",
@@ -41,7 +42,6 @@ source_set("flutter_channels") {
     "$flutter_root/fml",
     "$flutter_root/runtime",
     "$flutter_root/shell/common",
-    "//garnet/public/lib/fxl",
     "//third_party/skia",
   ]
 

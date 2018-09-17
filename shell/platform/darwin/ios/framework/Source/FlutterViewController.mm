@@ -49,7 +49,7 @@
   // We keep a separate reference to this and create it ahead of time because we want to be able to
   // setup a shell along with its platform view before the view has to appear.
   fml::scoped_nsobject<FlutterView> _flutterView;
-  fml::scoped_nsobject<UIView> _launchView;
+  fml::scoped_nsobject<UIView> _splashScreenView;
   UIInterfaceOrientationMask _orientationPreferences;
   UIStatusBarStyle _statusBarStyle;
   blink::ViewportMetrics _viewportMetrics;
@@ -60,16 +60,15 @@
 
 #pragma mark - Manage and override all designated initializers
 
-- (instancetype)initWithProject:(FlutterDartProject*)project
+- (instancetype)initWithProject:(FlutterDartProject*)projectOrNil
                         nibName:(NSString*)nibNameOrNil
                          bundle:(NSBundle*)nibBundleOrNil {
   self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
-
   if (self) {
-    if (project == nil)
-      _dartProject.reset([[FlutterDartProject alloc] initFromDefaultSourceForConfiguration]);
+    if (projectOrNil == nil)
+      _dartProject.reset([[FlutterDartProject alloc] init]);
     else
-      _dartProject.reset([project retain]);
+      _dartProject.reset([projectOrNil retain]);
 
     [self performCommonViewControllerInitialization];
   }
@@ -82,6 +81,10 @@
 }
 
 - (instancetype)initWithCoder:(NSCoder*)aDecoder {
+  return [self initWithProject:nil nibName:nil bundle:nil];
+}
+
+- (instancetype)init {
   return [self initWithProject:nil nibName:nil bundle:nil];
 }
 
@@ -105,17 +108,17 @@
 }
 
 - (shell::Shell&)shell {
-  FXL_DCHECK(_shell);
+  FML_DCHECK(_shell);
   return *_shell;
 }
 
 - (fml::WeakPtr<shell::PlatformViewIOS>)iosPlatformView {
-  FXL_DCHECK(_shell);
+  FML_DCHECK(_shell);
   return _shell->GetPlatformView();
 }
 
 - (BOOL)setupShell {
-  FXL_DCHECK(_shell == nullptr);
+  FML_DCHECK(_shell == nullptr);
 
   static size_t shell_count = 1;
 
@@ -163,7 +166,7 @@
   );
 
   if (!_shell) {
-    FXL_LOG(ERROR) << "Could not setup a shell to run the Dart application.";
+    FML_LOG(ERROR) << "Could not setup a shell to run the Dart application.";
     return false;
   }
 
@@ -283,6 +286,21 @@
                object:nil];
 
   [center addObserver:self
+             selector:@selector(onAccessibilityStatusChanged:)
+                 name:UIAccessibilityInvertColorsStatusDidChangeNotification
+               object:nil];
+
+  [center addObserver:self
+             selector:@selector(onAccessibilityStatusChanged:)
+                 name:UIAccessibilityReduceMotionStatusDidChangeNotification
+               object:nil];
+
+  [center addObserver:self
+             selector:@selector(onAccessibilityStatusChanged:)
+                 name:UIAccessibilityBoldTextStatusDidChangeNotification
+               object:nil];
+
+  [center addObserver:self
              selector:@selector(onMemoryWarning:)
                  name:UIApplicationDidReceiveMemoryWarningNotification
                object:nil];
@@ -304,47 +322,46 @@
   self.view.multipleTouchEnabled = YES;
   self.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
 
-  [self installLaunchViewIfNecessary];
+  [self installSplashScreenViewIfNecessary];
 }
 
 #pragma mark - Managing launch views
 
-- (void)installLaunchViewIfNecessary {
+- (void)installSplashScreenViewIfNecessary {
   // Show the launch screen view again on top of the FlutterView if available.
   // This launch screen view will be removed once the first Flutter frame is rendered.
-  [_launchView.get() removeFromSuperview];
-  _launchView.reset();
-  NSString* launchStoryboardName =
-      [[[NSBundle mainBundle] infoDictionary] objectForKey:@"UILaunchStoryboardName"];
-  if (launchStoryboardName && !self.isBeingPresented && !self.isMovingToParentViewController) {
-    UIViewController* launchViewController =
-        [[UIStoryboard storyboardWithName:launchStoryboardName bundle:nil]
-            instantiateInitialViewController];
-    _launchView.reset([launchViewController.view retain]);
-    _launchView.get().frame = self.view.bounds;
-    _launchView.get().autoresizingMask =
-        UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    [self.view addSubview:_launchView.get()];
+  if (self.isBeingPresented || self.isMovingToParentViewController) {
+    [_splashScreenView.get() removeFromSuperview];
+    _splashScreenView.reset();
+    return;
   }
+
+  // Use the property getter to initialize the default value.
+  UIView* splashScreenView = self.splashScreenView;
+  if (splashScreenView == nil) {
+    return;
+  }
+  splashScreenView.frame = self.view.bounds;
+  [self.view addSubview:splashScreenView];
 }
 
-- (void)removeLaunchViewIfPresent {
-  if (!_launchView) {
+- (void)removeSplashScreenViewIfPresent {
+  if (!_splashScreenView) {
     return;
   }
 
   [UIView animateWithDuration:0.2
       animations:^{
-        _launchView.get().alpha = 0;
+        _splashScreenView.get().alpha = 0;
       }
       completion:^(BOOL finished) {
-        [_launchView.get() removeFromSuperview];
-        _launchView.reset();
+        [_splashScreenView.get() removeFromSuperview];
+        _splashScreenView.reset();
       }];
 }
 
-- (void)installLaunchViewCallback {
-  if (!_shell || !_launchView) {
+- (void)installSplashScreenViewCallback {
+  if (!_shell || !_splashScreenView) {
     return;
   }
   auto weak_platform_view = _shell->GetPlatformView();
@@ -363,10 +380,35 @@
           // association. Thus, we are not convinced that the unsafe unretained weak object is in
           // fact alive.
           if (weak_platform_view) {
-            [weak_flutter_view_controller removeLaunchViewIfPresent];
+            [weak_flutter_view_controller removeSplashScreenViewIfPresent];
           }
         });
       });
+}
+
+#pragma mark - Properties
+
+- (UIView*)splashScreenView {
+  if (_splashScreenView == nullptr) {
+    NSString* launchStoryboardName =
+        [[[NSBundle mainBundle] infoDictionary] objectForKey:@"UILaunchStoryboardName"];
+    if (launchStoryboardName == nil) {
+      return nil;
+    }
+    UIStoryboard* storyboard = [UIStoryboard storyboardWithName:launchStoryboardName bundle:nil];
+    if (storyboard == nil) {
+      return nil;
+    }
+    UIViewController* splashScreenViewController = [storyboard instantiateInitialViewController];
+    self.splashScreenView = splashScreenViewController.view;
+  }
+  return _splashScreenView.get();
+}
+
+- (void)setSplashScreenView:(UIView*)view {
+  _splashScreenView.reset([view retain]);
+  _splashScreenView.get().autoresizingMask =
+      UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
 }
 
 #pragma mark - Surface creation and teardown updates
@@ -374,7 +416,7 @@
 - (void)surfaceUpdated:(BOOL)appeared {
   // NotifyCreated/NotifyDestroyed are synchronous and require hops between the UI and GPU thread.
   if (appeared) {
-    [self installLaunchViewCallback];
+    [self installSplashScreenViewCallback];
     _shell->GetPlatformView()->NotifyCreated();
 
   } else {
@@ -389,13 +431,13 @@
 
   // Launch the Dart application with the inferred run configuration.
   _shell->GetTaskRunners().GetUITaskRunner()->PostTask(
-      fxl::MakeCopyable([engine = _shell->GetEngine(),                   //
+      fml::MakeCopyable([engine = _shell->GetEngine(),                   //
                          config = [_dartProject.get() runConfiguration]  //
   ]() mutable {
         if (engine) {
           auto result = engine->Run(std::move(config));
           if (!result) {
-            FXL_LOG(ERROR) << "Could not launch engine with configuration.";
+            FML_LOG(ERROR) << "Could not launch engine with configuration.";
           }
         }
       }));
@@ -534,7 +576,7 @@ static inline blink::PointerData::DeviceKind DeviceKindFromTouchType(UITouch* to
         break;
     }
 
-    FXL_DCHECK(device_id != 0);
+    FML_DCHECK(device_id != 0);
     CGPoint windowCoordinates = [touch locationInView:self.view];
 
     blink::PointerData pointer_data;
@@ -609,7 +651,7 @@ static inline blink::PointerData::DeviceKind DeviceKindFromTouchType(UITouch* to
   }
 
   _shell->GetTaskRunners().GetUITaskRunner()->PostTask(
-      fxl::MakeCopyable([engine = _shell->GetEngine(), packet = std::move(packet)] {
+      fml::MakeCopyable([engine = _shell->GetEngine(), packet = std::move(packet)] {
         if (engine) {
           engine->DispatchPointerDataPacket(*packet);
         }
@@ -792,16 +834,27 @@ static inline blink::PointerData::DeviceKind DeviceKindFromTouchType(UITouch* to
 #pragma mark - Accessibility
 
 - (void)onAccessibilityStatusChanged:(NSNotification*)notification {
+  auto platformView = _shell->GetPlatformView();
+  int32_t flags = 0;
+  if (UIAccessibilityIsInvertColorsEnabled())
+    flags ^= static_cast<int32_t>(blink::AccessibilityFeatureFlag::kInvertColors);
+  if (UIAccessibilityIsReduceMotionEnabled())
+    flags ^= static_cast<int32_t>(blink::AccessibilityFeatureFlag::kReduceMotion);
+  if (UIAccessibilityIsBoldTextEnabled())
+    flags ^= static_cast<int32_t>(blink::AccessibilityFeatureFlag::kBoldText);
 #if TARGET_OS_SIMULATOR
   // There doesn't appear to be any way to determine whether the accessibility
   // inspector is enabled on the simulator. We conservatively always turn on the
-  // accessibility bridge in the simulator.
-  bool enabled = true;
+  // accessibility bridge in the simulator, but never assistive technology.
+  platformView->SetSemanticsEnabled(true);
+  platformView->SetAccessibilityFeatures(flags);
 #else
-  bool enabled = UIAccessibilityIsVoiceOverRunning() || UIAccessibilityIsSwitchControlRunning() ||
-                 UIAccessibilityIsSpeakScreenEnabled();
+  bool enabled = UIAccessibilityIsVoiceOverRunning() || UIAccessibilityIsSwitchControlRunning();
+  if (UIAccessibilityIsVoiceOverRunning() || UIAccessibilityIsSwitchControlRunning())
+    flags ^= static_cast<int32_t>(blink::AccessibilityFeatureFlag::kAccessibleNavigation);
+  platformView->SetSemanticsEnabled(enabled || UIAccessibilityIsSpeakScreenEnabled());
+  platformView->SetAccessibilityFeatures(flags);
 #endif
-  _shell->GetPlatformView()->SetSemanticsEnabled(enabled);
 }
 
 #pragma mark - Memory Notifications
@@ -967,16 +1020,16 @@ constexpr CGFloat kStandardStatusBarHeight = 20.0;
               message:(NSData*)message
           binaryReply:(FlutterBinaryReply)callback {
   NSAssert(channel, @"The channel must not be null");
-  fxl::RefPtr<shell::PlatformMessageResponseDarwin> response =
+  fml::RefPtr<shell::PlatformMessageResponseDarwin> response =
       (callback == nil) ? nullptr
-                        : fxl::MakeRefCounted<shell::PlatformMessageResponseDarwin>(
+                        : fml::MakeRefCounted<shell::PlatformMessageResponseDarwin>(
                               ^(NSData* reply) {
                                 callback(reply);
                               },
                               _shell->GetTaskRunners().GetPlatformTaskRunner());
-  fxl::RefPtr<blink::PlatformMessage> platformMessage =
-      (message == nil) ? fxl::MakeRefCounted<blink::PlatformMessage>(channel.UTF8String, response)
-                       : fxl::MakeRefCounted<blink::PlatformMessage>(
+  fml::RefPtr<blink::PlatformMessage> platformMessage =
+      (message == nil) ? fml::MakeRefCounted<blink::PlatformMessage>(channel.UTF8String, response)
+                       : fml::MakeRefCounted<blink::PlatformMessage>(
                              channel.UTF8String, shell::GetVectorFromNSData(message), response);
 
   _shell->GetPlatformView()->DispatchPlatformMessage(platformMessage);

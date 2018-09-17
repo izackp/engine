@@ -14,43 +14,60 @@
 #include <string>
 #include <utility>
 
+#include "flutter/fml/make_copyable.h"
 #include "flutter/fml/message_loop.h"
 #include "flutter/shell/common/rasterizer.h"
 #include "flutter/shell/platform/android/platform_view_android.h"
-#include "lib/fxl/functional/make_copyable.h"
 
 namespace shell {
 
 AndroidShellHolder::AndroidShellHolder(
     blink::Settings settings,
-    fml::jni::JavaObjectWeakGlobalRef java_object)
+    fml::jni::JavaObjectWeakGlobalRef java_object,
+    bool is_background_view)
     : settings_(std::move(settings)), java_object_(java_object) {
   static size_t shell_count = 1;
   auto thread_label = std::to_string(shell_count++);
 
-  FXL_CHECK(pthread_key_create(&thread_destruct_key_, ThreadDestructCallback) ==
+  FML_CHECK(pthread_key_create(&thread_destruct_key_, ThreadDestructCallback) ==
             0);
 
-  thread_host_ = {thread_label, ThreadHost::Type::UI | ThreadHost::Type::GPU |
-                                    ThreadHost::Type::IO};
+  if (is_background_view) {
+    thread_host_ = {thread_label, ThreadHost::Type::UI};
+  } else {
+    thread_host_ = {thread_label, ThreadHost::Type::UI | ThreadHost::Type::GPU |
+                                      ThreadHost::Type::IO};
+  }
 
   // Detach from JNI when the UI and GPU threads exit.
   auto jni_exit_task([key = thread_destruct_key_]() {
-    FXL_CHECK(pthread_setspecific(key, reinterpret_cast<void*>(1)) == 0);
+    FML_CHECK(pthread_setspecific(key, reinterpret_cast<void*>(1)) == 0);
   });
   thread_host_.ui_thread->GetTaskRunner()->PostTask(jni_exit_task);
-  thread_host_.gpu_thread->GetTaskRunner()->PostTask(jni_exit_task);
+  if (!is_background_view) {
+    thread_host_.gpu_thread->GetTaskRunner()->PostTask(jni_exit_task);
+  }
 
   fml::WeakPtr<PlatformViewAndroid> weak_platform_view;
   Shell::CreateCallback<PlatformView> on_create_platform_view =
-      [java_object, &weak_platform_view](Shell& shell) {
-        auto platform_view_android = std::make_unique<PlatformViewAndroid>(
-            shell,                   // delegate
-            shell.GetTaskRunners(),  // task runners
-            java_object,             // java object handle for JNI interop
-            shell.GetSettings()
-                .enable_software_rendering  // use software rendering
-        );
+      [is_background_view, java_object, &weak_platform_view](Shell& shell) {
+        std::unique_ptr<PlatformViewAndroid> platform_view_android;
+        if (is_background_view) {
+          platform_view_android = std::make_unique<PlatformViewAndroid>(
+              shell,                   // delegate
+              shell.GetTaskRunners(),  // task runners
+              java_object              // java object handle for JNI interop
+          );
+
+        } else {
+          platform_view_android = std::make_unique<PlatformViewAndroid>(
+              shell,                   // delegate
+              shell.GetTaskRunners(),  // task runners
+              java_object,             // java object handle for JNI interop
+              shell.GetSettings()
+                  .enable_software_rendering  // use software rendering
+          );
+        }
         weak_platform_view = platform_view_android->GetWeakPtr();
         return platform_view_android;
       };
@@ -62,13 +79,26 @@ AndroidShellHolder::AndroidShellHolder(
   // The current thread will be used as the platform thread. Ensure that the
   // message loop is initialized.
   fml::MessageLoop::EnsureInitializedForCurrentThread();
-
-  blink::TaskRunners task_runners(
-      thread_label,                                    // label
-      fml::MessageLoop::GetCurrent().GetTaskRunner(),  // platform
-      thread_host_.gpu_thread->GetTaskRunner(),        // gpu
-      thread_host_.ui_thread->GetTaskRunner(),         // ui
-      thread_host_.io_thread->GetTaskRunner()          // io
+  fml::RefPtr<fml::TaskRunner> gpu_runner;
+  fml::RefPtr<fml::TaskRunner> ui_runner;
+  fml::RefPtr<fml::TaskRunner> io_runner;
+  fml::RefPtr<fml::TaskRunner> platform_runner =
+      fml::MessageLoop::GetCurrent().GetTaskRunner();
+  if (is_background_view) {
+    auto single_task_runner = thread_host_.ui_thread->GetTaskRunner();
+    gpu_runner = single_task_runner;
+    ui_runner = single_task_runner;
+    io_runner = single_task_runner;
+  } else {
+    gpu_runner = thread_host_.gpu_thread->GetTaskRunner();
+    ui_runner = thread_host_.ui_thread->GetTaskRunner();
+    io_runner = thread_host_.io_thread->GetTaskRunner();
+  }
+  blink::TaskRunners task_runners(thread_label,     // label
+                                  platform_runner,  // platform
+                                  gpu_runner,       // gpu
+                                  ui_runner,        // ui
+                                  io_runner         // io
   );
 
   shell_ =
@@ -79,7 +109,7 @@ AndroidShellHolder::AndroidShellHolder(
       );
 
   platform_view_ = weak_platform_view;
-  FXL_DCHECK(platform_view_);
+  FML_DCHECK(platform_view_);
 
   is_valid_ = shell_ != nullptr;
 
@@ -92,13 +122,13 @@ AndroidShellHolder::AndroidShellHolder(
         // Defensive fallback. Depending on the OEM, it may not be possible
         // to set priority to -5.
         if (::setpriority(PRIO_PROCESS, gettid(), -2) != 0) {
-          FXL_LOG(ERROR) << "Failed to set GPU task runner priority";
+          FML_LOG(ERROR) << "Failed to set GPU task runner priority";
         }
       }
     });
     task_runners.GetUITaskRunner()->PostTask([]() {
       if (::setpriority(PRIO_PROCESS, gettid(), -1) != 0) {
-        FXL_LOG(ERROR) << "Failed to set UI task runner priority";
+        FML_LOG(ERROR) << "Failed to set UI task runner priority";
       }
     });
   }
@@ -107,7 +137,7 @@ AndroidShellHolder::AndroidShellHolder(
 AndroidShellHolder::~AndroidShellHolder() {
   shell_.reset();
   thread_host_.Reset();
-  FXL_CHECK(pthread_key_delete(thread_destruct_key_) == 0);
+  FML_CHECK(pthread_key_delete(thread_destruct_key_) == 0);
 }
 
 void AndroidShellHolder::ThreadDestructCallback(void* value) {
@@ -128,13 +158,15 @@ void AndroidShellHolder::Launch(RunConfiguration config) {
   }
 
   shell_->GetTaskRunners().GetUITaskRunner()->PostTask(
-      fxl::MakeCopyable([engine = shell_->GetEngine(),  //
+      fml::MakeCopyable([engine = shell_->GetEngine(),  //
                          config = std::move(config)     //
   ]() mutable {
-        if (engine) {
-          if (!engine->Run(std::move(config))) {
-            FXL_LOG(ERROR) << "Could not launch engine in configuration.";
-          }
+        FML_LOG(INFO) << "Attempting to launch engine configuration...";
+        if (!engine || !engine->Run(std::move(config))) {
+          FML_LOG(ERROR) << "Could not launch engine in configuration.";
+        } else {
+          FML_LOG(INFO) << "Isolate for engine configuration successfully "
+                           "started and run.";
         }
       }));
 }
@@ -159,7 +191,7 @@ void AndroidShellHolder::DispatchPointerDataPacket(
     return;
   }
 
-  shell_->GetTaskRunners().GetUITaskRunner()->PostTask(fxl::MakeCopyable(
+  shell_->GetTaskRunners().GetUITaskRunner()->PostTask(fml::MakeCopyable(
       [engine = shell_->GetEngine(), packet = std::move(packet)] {
         if (engine) {
           engine->DispatchPointerDataPacket(*packet);
@@ -177,7 +209,7 @@ Rasterizer::Screenshot AndroidShellHolder::Screenshot(
 }
 
 fml::WeakPtr<PlatformViewAndroid> AndroidShellHolder::GetPlatformView() {
-  FXL_DCHECK(platform_view_);
+  FML_DCHECK(platform_view_);
   return platform_view_;
 }
 

@@ -10,69 +10,69 @@
 #include <vector>
 
 #include "flutter/common/settings.h"
+#include "flutter/fml/build_config.h"
+#include "flutter/fml/closure.h"
+#include "flutter/fml/macros.h"
+#include "flutter/fml/memory/ref_counted.h"
+#include "flutter/fml/memory/ref_ptr.h"
+#include "flutter/fml/memory/weak_ptr.h"
 #include "flutter/lib/ui/isolate_name_server/isolate_name_server.h"
 #include "flutter/runtime/dart_isolate.h"
 #include "flutter/runtime/dart_snapshot.h"
 #include "flutter/runtime/service_protocol.h"
-#include "lib/fxl/build_config.h"
-#include "lib/fxl/functional/closure.h"
-#include "lib/fxl/macros.h"
-#include "lib/fxl/memory/ref_counted.h"
-#include "lib/fxl/memory/ref_ptr.h"
-#include "lib/fxl/memory/weak_ptr.h"
 #include "third_party/dart/runtime/include/dart_api.h"
 
 namespace blink {
 
-class DartVM : public fxl::RefCountedThreadSafe<DartVM> {
+class DartVM : public fml::RefCountedThreadSafe<DartVM> {
  public:
-  static fxl::RefPtr<DartVM> ForProcess(Settings settings);
+  static fml::RefPtr<DartVM> ForProcess(Settings settings);
 
-  static fxl::RefPtr<DartVM> ForProcess(
+  static fml::RefPtr<DartVM> ForProcess(
       Settings settings,
-      fxl::RefPtr<DartSnapshot> vm_snapshot,
-      fxl::RefPtr<DartSnapshot> isolate_snapshot,
-      fxl::RefPtr<DartSnapshot> shared_snapshot);
+      fml::RefPtr<DartSnapshot> vm_snapshot,
+      fml::RefPtr<DartSnapshot> isolate_snapshot,
+      fml::RefPtr<DartSnapshot> shared_snapshot);
 
-  static fxl::RefPtr<DartVM> ForProcessIfInitialized();
+  static fml::RefPtr<DartVM> ForProcessIfInitialized();
 
   static bool IsRunningPrecompiledCode();
 
-  const Settings& GetSettings() const;
+  static bool IsKernelMapping(const fml::FileMapping* mapping);
 
-  const fml::Mapping& GetPlatformKernel() const;
+  const Settings& GetSettings() const;
 
   const DartSnapshot& GetVMSnapshot() const;
 
   IsolateNameServer* GetIsolateNameServer();
 
-  fxl::RefPtr<DartSnapshot> GetIsolateSnapshot() const;
-  fxl::RefPtr<DartSnapshot> GetSharedSnapshot() const;
+  fml::RefPtr<DartSnapshot> GetIsolateSnapshot() const;
 
-  fxl::WeakPtr<DartVM> GetWeakPtr();
+  fml::RefPtr<DartSnapshot> GetSharedSnapshot() const;
+
+  fml::WeakPtr<DartVM> GetWeakPtr();
 
   ServiceProtocol& GetServiceProtocol();
 
  private:
   const Settings settings_;
-  const fxl::RefPtr<DartSnapshot> vm_snapshot_;
+  const fml::RefPtr<DartSnapshot> vm_snapshot_;
   IsolateNameServer isolate_name_server_;
-  const fxl::RefPtr<DartSnapshot> isolate_snapshot_;
-  const fxl::RefPtr<DartSnapshot> shared_snapshot_;
-  std::unique_ptr<fml::Mapping> platform_kernel_mapping_;
+  const fml::RefPtr<DartSnapshot> isolate_snapshot_;
+  const fml::RefPtr<DartSnapshot> shared_snapshot_;
   ServiceProtocol service_protocol_;
-  fxl::WeakPtrFactory<DartVM> weak_factory_;
+  fml::WeakPtrFactory<DartVM> weak_factory_;
 
   DartVM(const Settings& settings,
-         fxl::RefPtr<DartSnapshot> vm_snapshot,
-         fxl::RefPtr<DartSnapshot> isolate_snapshot,
-         fxl::RefPtr<DartSnapshot> shared_snapshot);
+         fml::RefPtr<DartSnapshot> vm_snapshot,
+         fml::RefPtr<DartSnapshot> isolate_snapshot,
+         fml::RefPtr<DartSnapshot> shared_snapshot);
 
   ~DartVM();
 
-  FRIEND_REF_COUNTED_THREAD_SAFE(DartVM);
-  FRIEND_MAKE_REF_COUNTED(DartVM);
-  FXL_DISALLOW_COPY_AND_ASSIGN(DartVM);
+  FML_FRIEND_REF_COUNTED_THREAD_SAFE(DartVM);
+  FML_FRIEND_MAKE_REF_COUNTED(DartVM);
+  FML_DISALLOW_COPY_AND_ASSIGN(DartVM);
 };
 
 }  // namespace blink

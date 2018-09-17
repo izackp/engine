@@ -7,7 +7,8 @@
 
 #include <map>
 
-#include "lib/fxl/synchronization/waitable_event.h"
+#include "flutter/fml/macros.h"
+#include "flutter/fml/synchronization/waitable_event.h"
 #include "third_party/skia/include/core/SkCanvas.h"
 
 namespace flow {
@@ -21,7 +22,7 @@ class Texture {
   virtual ~Texture();
 
   // Called from GPU thread.
-  virtual void Paint(SkCanvas& canvas, const SkRect& bounds) = 0;
+  virtual void Paint(SkCanvas& canvas, const SkRect& bounds, bool freeze) = 0;
 
   // Called from GPU thread.
   virtual void OnGrContextCreated() = 0;
@@ -37,7 +38,7 @@ class Texture {
  private:
   int64_t id_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(Texture);
+  FML_DISALLOW_COPY_AND_ASSIGN(Texture);
 };
 
 class TextureRegistry {
@@ -63,7 +64,7 @@ class TextureRegistry {
  private:
   std::map<int64_t, std::shared_ptr<Texture>> mapping_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(TextureRegistry);
+  FML_DISALLOW_COPY_AND_ASSIGN(TextureRegistry);
 };
 
 }  // namespace flow

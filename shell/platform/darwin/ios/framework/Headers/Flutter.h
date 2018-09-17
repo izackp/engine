@@ -8,6 +8,13 @@
 /**
  BREAKING CHANGES:
 
+ August 31, 2018: Marked -[FlutterDartProject
+ initFromDefaultSourceForConfiguration] and FlutterStandardBigInteger as
+ unavailable.
+
+ July 26, 2018: Marked -[FlutterDartProject
+ initFromDefaultSourceForConfiguration] deprecated.
+
  February 28, 2018: Removed "initWithFLXArchive" and
  "initWithFLXArchiveWithScriptSnapshot".
 
@@ -36,6 +43,7 @@
 
 #include "FlutterAppDelegate.h"
 #include "FlutterBinaryMessenger.h"
+#include "FlutterCallbackCache.h"
 #include "FlutterChannels.h"
 #include "FlutterCodecs.h"
 #include "FlutterDartProject.h"

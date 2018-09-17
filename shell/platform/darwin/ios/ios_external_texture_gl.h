@@ -19,7 +19,9 @@ class IOSExternalTextureGL : public flow::Texture {
   ~IOSExternalTextureGL() override;
 
   // Called from GPU thread.
-  virtual void Paint(SkCanvas& canvas, const SkRect& bounds) override;
+  virtual void Paint(SkCanvas& canvas,
+                     const SkRect& bounds,
+                     bool freeze) override;
 
   virtual void OnGrContextCreated() override;
 
@@ -31,7 +33,7 @@ class IOSExternalTextureGL : public flow::Texture {
   NSObject<FlutterTexture>* external_texture_;
   fml::CFRef<CVOpenGLESTextureCacheRef> cache_ref_;
   fml::CFRef<CVOpenGLESTextureRef> texture_ref_;
-  FXL_DISALLOW_COPY_AND_ASSIGN(IOSExternalTextureGL);
+  FML_DISALLOW_COPY_AND_ASSIGN(IOSExternalTextureGL);
 };
 
 }  // namespace shell

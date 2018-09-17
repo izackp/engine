@@ -9,11 +9,9 @@
 #include <mutex>
 #include <string>
 
+#include "flutter/fml/macros.h"
 #include "flutter/fml/synchronization/thread_annotations.h"
-#include "lib/fxl/macros.h"
 #include "third_party/dart/runtime/include/dart_api.h"
-
-#define LOCK_UNLOCK(m) FML_ACQUIRE(m) FML_RELEASE(m)
 
 namespace blink {
 
@@ -24,16 +22,17 @@ class IsolateNameServer {
   // Looks up the Dart_Port associated with a given name. Returns ILLEGAL_PORT
   // if the name does not exist.
   Dart_Port LookupIsolatePortByName(const std::string& name)
-      LOCK_UNLOCK(mutex_);
+      FML_LOCKS_EXCLUDED(mutex_);
 
   // Registers a Dart_Port with a given name. Returns true if registration is
   // successful, false if the name entry already exists.
   bool RegisterIsolatePortWithName(Dart_Port port, const std::string& name)
-      LOCK_UNLOCK(mutex_);
+      FML_LOCKS_EXCLUDED(mutex_);
 
   // Removes a name to Dart_Port mapping given a name. Returns true if the
   // mapping was successfully removed, false if the mapping does not exist.
-  bool RemoveIsolateNameMapping(const std::string& name) LOCK_UNLOCK(mutex_);
+  bool RemoveIsolateNameMapping(const std::string& name)
+      FML_LOCKS_EXCLUDED(mutex_);
 
  private:
   Dart_Port LookupIsolatePortByNameUnprotected(const std::string& name)
@@ -42,7 +41,7 @@ class IsolateNameServer {
   mutable std::mutex mutex_;
   std::map<std::string, Dart_Port> port_mapping_ FML_GUARDED_BY(mutex_);
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(IsolateNameServer);
+  FML_DISALLOW_COPY_AND_ASSIGN(IsolateNameServer);
 };
 
 }  // namespace blink

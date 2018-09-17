@@ -3,8 +3,8 @@
 // found in the LICENSE file.
 
 #include "flutter/common/settings.h"
-#include "lib/fxl/command_line.h"
-#include "lib/fxl/strings/string_view.h"
+#include "flutter/fml/command_line.h"
+#include "flutter/fml/string_view.h"
 
 #ifndef SHELL_COMMON_SWITCHES_H_
 #define SHELL_COMMON_SWITCHES_H_
@@ -93,7 +93,6 @@ DEF_SWITCH(Help, "help", "Display this help text.")
 DEF_SWITCH(LogTag, "log-tag", "Tag associated with log messages.")
 DEF_SWITCH(MainDartFile, "dart-main", "The path to the main Dart file.")
 DEF_SWITCH(Packages, "packages", "Specify the path to the packages.")
-DEF_SWITCH(Snapshot, "snapshot-blob", "Specify the path to the snapshot blob")
 DEF_SWITCH(StartPaused,
            "start-paused",
            "Start the application paused in the Dart debugger.")
@@ -133,9 +132,9 @@ DEF_SWITCHES_END
 
 void PrintUsage(const std::string& executable_name);
 
-const fxl::StringView FlagForSwitch(Switch swtch);
+const fml::StringView FlagForSwitch(Switch swtch);
 
-blink::Settings SettingsFromCommandLine(const fxl::CommandLine& command_line);
+blink::Settings SettingsFromCommandLine(const fml::CommandLine& command_line);
 
 }  // namespace shell
 

@@ -4,13 +4,13 @@
 
 #include "flutter/lib/ui/painting/paint.h"
 
+#include "flutter/fml/logging.h"
 #include "flutter/lib/ui/painting/shader.h"
-#include "lib/fxl/logging.h"
-#include "lib/tonic/typed_data/dart_byte_data.h"
 #include "third_party/skia/include/core/SkColorFilter.h"
 #include "third_party/skia/include/core/SkMaskFilter.h"
 #include "third_party/skia/include/core/SkShader.h"
 #include "third_party/skia/include/core/SkString.h"
+#include "third_party/tonic/typed_data/dart_byte_data.h"
 
 namespace blink {
 
@@ -30,6 +30,7 @@ constexpr int kColorFilterBlendModeIndex = 11;
 constexpr int kMaskFilterIndex = 12;
 constexpr int kMaskFilterBlurStyleIndex = 13;
 constexpr int kMaskFilterSigmaIndex = 14;
+constexpr int kInvertColorIndex = 15;
 constexpr size_t kDataByteCount = 75;  // 4 * (last index + 1)
 
 // Indices for objects.
@@ -47,6 +48,16 @@ constexpr uint32_t kBlendModeDefault =
 // default SkPaintDefaults_MiterLimit in Skia (which is not in a public header).
 constexpr double kStrokeMiterLimitDefault = 4.0;
 
+// A color matrix which inverts colors.
+// clang-format off
+constexpr SkScalar invert_colors[20] = {
+  -1.0,    0,    0, 1.0, 0,
+     0, -1.0,    0, 1.0, 0,
+     0,    0, -1.0, 1.0, 0,
+   1.0,  1.0,  1.0, 1.0, 0
+};
+// clang-format on
+
 // Must be kept in sync with the MaskFilter private constants in painting.dart.
 enum MaskFilterType { Null, Blur };
 
@@ -56,11 +67,11 @@ Paint::Paint(Dart_Handle paint_objects, Dart_Handle paint_data) {
     return;
 
   if (!Dart_IsNull(paint_objects)) {
-    FXL_DCHECK(Dart_IsList(paint_objects));
+    FML_DCHECK(Dart_IsList(paint_objects));
     intptr_t length = 0;
     Dart_ListLength(paint_objects, &length);
 
-    FXL_CHECK(length == kObjectCount);
+    FML_CHECK(length == kObjectCount);
     Dart_Handle values[kObjectCount];
     if (Dart_IsError(Dart_ListGetRange(paint_objects, 0, kObjectCount, values)))
       return;
@@ -73,7 +84,7 @@ Paint::Paint(Dart_Handle paint_objects, Dart_Handle paint_data) {
   }
 
   tonic::DartByteData byte_data(paint_data);
-  FXL_CHECK(byte_data.length_in_bytes() == kDataByteCount);
+  FML_CHECK(byte_data.length_in_bytes() == kDataByteCount);
 
   const uint32_t* uint_data = static_cast<const uint32_t*>(byte_data.data());
   const float* float_data = static_cast<const float*>(byte_data.data());
@@ -116,7 +127,19 @@ Paint::Paint(Dart_Handle paint_objects, Dart_Handle paint_data) {
   if (filter_quality)
     paint_.setFilterQuality(static_cast<SkFilterQuality>(filter_quality));
 
-  if (uint_data[kColorFilterIndex]) {
+  if (uint_data[kColorFilterIndex] && uint_data[kInvertColorIndex]) {
+    SkColor color = uint_data[kColorFilterColorIndex];
+    SkBlendMode blend_mode =
+        static_cast<SkBlendMode>(uint_data[kColorFilterBlendModeIndex]);
+    sk_sp<SkColorFilter> color_filter =
+        SkColorFilter::MakeModeFilter(color, blend_mode);
+    sk_sp<SkColorFilter> invert_filter =
+        SkColorFilter::MakeMatrixFilterRowMajor255(invert_colors);
+    paint_.setColorFilter(invert_filter->makeComposed(color_filter));
+  } else if (uint_data[kInvertColorIndex]) {
+    paint_.setColorFilter(
+        SkColorFilter::MakeMatrixFilterRowMajor255(invert_colors));
+  } else if (uint_data[kColorFilterIndex]) {
     SkColor color = uint_data[kColorFilterColorIndex];
     SkBlendMode blend_mode =
         static_cast<SkBlendMode>(uint_data[kColorFilterBlendModeIndex]);
@@ -140,18 +163,22 @@ Paint::Paint(Dart_Handle paint_objects, Dart_Handle paint_data) {
 namespace tonic {
 
 blink::Paint DartConverter<blink::Paint>::FromArguments(
-    Dart_NativeArguments args, int index, Dart_Handle& exception) {
+    Dart_NativeArguments args,
+    int index,
+    Dart_Handle& exception) {
   Dart_Handle paint_objects = Dart_GetNativeArgument(args, index);
-  FXL_DCHECK(!LogIfError(paint_objects));
+  FML_DCHECK(!LogIfError(paint_objects));
 
   Dart_Handle paint_data = Dart_GetNativeArgument(args, index + 1);
-  FXL_DCHECK(!LogIfError(paint_data));
+  FML_DCHECK(!LogIfError(paint_data));
 
   return blink::Paint(paint_objects, paint_data);
 }
 
 blink::PaintData DartConverter<blink::PaintData>::FromArguments(
-    Dart_NativeArguments args, int index, Dart_Handle& exception) {
+    Dart_NativeArguments args,
+    int index,
+    Dart_Handle& exception) {
   return blink::PaintData();
 }
 

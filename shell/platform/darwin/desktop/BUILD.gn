@@ -35,7 +35,6 @@ source_set("mac_desktop_platform") {
     "$flutter_root/shell/common",
     "$flutter_root/shell/platform/darwin/common",
     "$flutter_root/synchronization",
-    "//garnet/public/lib/fxl",
     "//third_party/dart/runtime:libdart_jit",
     "//third_party/skia",
     "//third_party/skia:gpu",
@@ -49,7 +48,7 @@ if (!is_fuchsia_host) {
 
   resource_copy_mac("mac_desktop_resources") {
     app_name = "FlutterTester"
-    resources = [ "//third_party/icu/common/icudtl.dat" ]
+    resources = [ "//third_party/icu/flutter/icudtl.dat" ]
     bundle_directory = "."
   }
 

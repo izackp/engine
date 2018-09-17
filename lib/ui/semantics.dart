@@ -26,6 +26,10 @@ class SemanticsAction {
   static const int _kPasteIndex = 1 << 14;
   static const int _kDidGainAccessibilityFocusIndex = 1 << 15;
   static const int _kDidLoseAccessibilityFocusIndex = 1 << 16;
+  static const int _kCustomAction = 1 << 17;
+  static const int _kDismissIndex = 1 << 18;
+  static const int _kMoveCursorForwardByWordIndex = 1 << 19;
+  static const int _kMoveCursorBackwardByWordIndex = 1 << 20;
 
   /// The numerical value for this action.
   ///
@@ -146,6 +150,37 @@ class SemanticsAction {
   /// Accessibility focus and input focus can be held by two different nodes!
   static const SemanticsAction didLoseAccessibilityFocus = const SemanticsAction._(_kDidLoseAccessibilityFocusIndex);
 
+  /// Indicates that the user has invoked a custom accessibility action.
+  ///
+  /// This handler is added automatically whenever a custom accessibility
+  /// action is added to a semantics node.
+  static const SemanticsAction customAction = const SemanticsAction._(_kCustomAction);
+
+  /// A request that the node should be dismissed.
+  ///
+  /// A [Snackbar], for example, may have a dismiss action to indicate to the
+  /// user that it can be removed after it is no longer relevant. On Android,
+  /// (with TalkBack) special hint text is spoken when focusing the node and
+  /// a custom action is availible in the local context menu. On iOS,
+  /// (with VoiceOver) users can perform a standard gesture to dismiss it.
+  static const SemanticsAction dismiss = const SemanticsAction._(_kDismissIndex);
+
+  /// Move the cursor forward by one word.
+  ///
+  /// This is for example used by the cursor control in text fields.
+  ///
+  /// The action includes a boolean argument, which indicates whether the cursor
+  /// movement should extend (or start) a selection.
+  static const SemanticsAction moveCursorForwardByWord = const SemanticsAction._(_kMoveCursorForwardByWordIndex);
+
+  /// Move the cursor backward by one word.
+  ///
+  /// This is for example used by the cursor control in text fields.
+  ///
+  /// The action includes a boolean argument, which indicates whether the cursor
+  /// movement should extend (or start) a selection.
+  static const SemanticsAction moveCursorBackwardByWord = const SemanticsAction._(_kMoveCursorBackwardByWordIndex);
+
   /// The possible semantics actions.
   ///
   /// The map's key is the [index] of the action and the value is the action
@@ -168,6 +203,10 @@ class SemanticsAction {
     _kPasteIndex: paste,
     _kDidGainAccessibilityFocusIndex: didGainAccessibilityFocus,
     _kDidLoseAccessibilityFocusIndex: didLoseAccessibilityFocus,
+    _kCustomAction: customAction,
+    _kDismissIndex: dismiss,
+    _kMoveCursorForwardByWordIndex: moveCursorForwardByWord,
+    _kMoveCursorBackwardByWordIndex: moveCursorBackwardByWord,
   };
 
   @override
@@ -207,6 +246,14 @@ class SemanticsAction {
         return 'SemanticsAction.didGainAccessibilityFocus';
       case _kDidLoseAccessibilityFocusIndex:
         return 'SemanticsAction.didLoseAccessibilityFocus';
+      case _kCustomAction:
+        return 'SemanticsAction.customAction';
+      case _kDismissIndex:
+        return 'SemanticsAction.dismiss';
+      case _kMoveCursorForwardByWordIndex:
+        return 'SemanticsAction.moveCursorForwardByWord';
+      case _kMoveCursorBackwardByWordIndex:
+        return 'SemanticsAction.moveCursorBackwardByWord';
     }
     return null;
   }
@@ -228,6 +275,11 @@ class SemanticsFlag {
   static const int _kScopesRouteIndex= 1 << 11;
   static const int _kNamesRouteIndex = 1 << 12;
   static const int _kIsHiddenIndex = 1 << 13;
+  static const int _kIsImageIndex = 1 << 14;
+  static const int _kIsLiveRegionIndex = 1 << 15;
+  static const int _kHasToggledStateIndex = 1 << 16;
+  static const int _kIsToggledIndex = 1 << 17;
+  static const int _kHasImplicitScrollingIndex = 1 << 18;
 
   const SemanticsFlag._(this.index);
 
@@ -238,7 +290,13 @@ class SemanticsFlag {
 
   /// The semantics node has the quality of either being "checked" or "unchecked".
   ///
+  /// This flag is mutually exclusive with [hasToggledState].
+  ///
   /// For example, a checkbox or a radio button widget has checked state.
+  ///
+  /// See also:
+  ///
+  ///   * [SemanticsFlag.isChecked], which controls whether the node is "checked" or "unchecked".
   static const SemanticsFlag hasCheckedState = const SemanticsFlag._(_kHasCheckedStateIndex);
 
   /// Whether a semantics node that [hasCheckedState] is checked.
@@ -247,6 +305,10 @@ class SemanticsFlag {
   /// "unchecked".
   ///
   /// For example, if a checkbox has a visible checkmark, [isChecked] is true.
+  ///
+  /// See also:
+  ///
+  ///   * [SemanticsFlag.hasCheckedState], which enables a checked state.
   static const SemanticsFlag isChecked = const SemanticsFlag._(_kIsCheckedIndex);
 
 
@@ -366,6 +428,53 @@ class SemanticsFlag {
   /// used to implement accessibility scrolling on iOS.
   static const SemanticsFlag isHidden = const SemanticsFlag._(_kIsHiddenIndex);
 
+  /// Whether the semantics node represents an image.
+  ///
+  /// Both TalkBack and VoiceOver will inform the user the the semantics node
+  /// represents an image.
+  static const SemanticsFlag isImage = const SemanticsFlag._(_kIsImageIndex);
+
+  /// Whether the semantics node is a live region.
+  ///
+  /// A live region indicates that updates to semantics node are important.
+  /// Platforms may use this information to make polite announcements to the
+  /// user to inform them of updates to this node.
+  ///
+  /// An example of a live region is a [SnackBar] widget. On Android, A live
+  /// region causes a polite announcement to be generated automatically, even
+  /// if the user does not have focus of the widget.
+  static const SemanticsFlag isLiveRegion = const SemanticsFlag._(_kIsLiveRegionIndex);
+
+  /// The semantics node has the quality of either being "on" or "off".
+  ///
+  /// This flag is mutually exclusive with [hasCheckedState].
+  ///
+  /// For example, a switch has toggled state.
+  ///
+  /// See also:
+  ///
+  ///    * [SemanticsFlag.isToggled], which controls whether the node is "on" or "off".
+  static const SemanticsFlag hasToggledState = const SemanticsFlag._(_kHasToggledStateIndex);
+
+  /// If true, the semantics node is "on". If false, the semantics node is
+  /// "off".
+  ///
+  /// For example, if a switch is in the on position, [isToggled] is true.
+  ///
+  /// See also:
+  ///
+  ///   * [SemanticsFlag.hasToggledState], which enables a toggled state.
+  static const SemanticsFlag isToggled = const SemanticsFlag._(_kIsToggledIndex);
+
+  /// Whether the platform can scroll the semantics node when the user attempts
+  /// to move focus to an offscreen child.
+  ///
+  /// For example, a [ListView] widget has implicit scrolling so that users can
+  /// easily move to the next visible set of children. A [TabBar] widget does
+  /// not have implicit scrolling, so that users can navigate into the tab
+  /// body when reaching the end of the tab bar.
+  static const SemanticsFlag hasImplicitScrolling = const SemanticsFlag._(_kHasImplicitScrollingIndex);
+
   /// The possible semantics flags.
   ///
   /// The map's key is the [index] of the flag and the value is the flag itself.
@@ -384,6 +493,11 @@ class SemanticsFlag {
     _kScopesRouteIndex: scopesRoute,
     _kNamesRouteIndex: namesRoute,
     _kIsHiddenIndex: isHidden,
+    _kIsImageIndex: isImage,
+    _kIsLiveRegionIndex: isLiveRegion,
+    _kHasToggledStateIndex: hasToggledState,
+    _kIsToggledIndex: isToggled,
+    _kHasImplicitScrollingIndex: hasImplicitScrolling,
   };
 
   @override
@@ -417,6 +531,16 @@ class SemanticsFlag {
         return 'SemanticsFlag.namesRoute';
       case _kIsHiddenIndex:
         return 'SemanticsFlag.isHidden';
+      case _kIsImageIndex:
+        return 'SemanticsFlag.isImage';
+      case _kIsLiveRegionIndex:
+        return 'SemanticsFlag.isLiveRegion';
+      case _kHasToggledStateIndex:
+        return 'SemanticsFlag.hasToggledState';
+      case _kIsToggledIndex:
+        return 'SemanticsFlag.isToggled';
+      case _kHasImplicitScrollingIndex:
+        return 'SemanticsFlag.hasImplicitScrolling';
     }
     return null;
   }
@@ -441,7 +565,7 @@ class SemanticsUpdateBuilder extends NativeFieldWrapperClass2 {
   /// length and contain the same ids. They may only differ in the order the
   /// ids are listed in. For more information about different child orders, see
   /// [DebugSemanticsDumpOrder].
-  /// 
+  ///
   /// The system retains the nodes that are currently reachable from the root.
   /// A given update need not contain information for nodes that do not change
   /// in the update. If a node is not reachable from the root after an update,
@@ -472,7 +596,9 @@ class SemanticsUpdateBuilder extends NativeFieldWrapperClass2 {
   /// describe the maximum and minimum in-rage values that `scrollPosition` can
   /// be. Both or either may be infinity to indicate unbound scrolling. The
   /// value for `scrollPosition` can (temporarily) be outside this range, for
-  /// example during an overscroll.
+  /// example during an overscroll. `scrollChildren` is the count of the
+  /// total number of child nodes that contribute semantics and `scrollIndex`
+  /// is the index of the first visible child node that contributes semantics.
   ///
   /// The `rect` is the region occupied by this node in its own coordinate
   /// system.
@@ -485,6 +611,8 @@ class SemanticsUpdateBuilder extends NativeFieldWrapperClass2 {
     int actions,
     int textSelectionBase,
     int textSelectionExtent,
+    int scrollChildren,
+    int scrollIndex,
     double scrollPosition,
     double scrollExtentMax,
     double scrollExtentMin,
@@ -498,6 +626,9 @@ class SemanticsUpdateBuilder extends NativeFieldWrapperClass2 {
     Float64List transform,
     Int32List childrenInTraversalOrder,
     Int32List childrenInHitTestOrder,
+    @Deprecated('use additionalActions instead')
+    Int32List customAcccessibilityActions,
+    Int32List additionalActions,
   }) {
     if (transform.length != 16)
       throw new ArgumentError('transform argument must have 16 entries.');
@@ -507,6 +638,8 @@ class SemanticsUpdateBuilder extends NativeFieldWrapperClass2 {
       actions,
       textSelectionBase,
       textSelectionExtent,
+      scrollChildren,
+      scrollIndex,
       scrollPosition,
       scrollExtentMax,
       scrollExtentMin,
@@ -523,6 +656,7 @@ class SemanticsUpdateBuilder extends NativeFieldWrapperClass2 {
       transform,
       childrenInTraversalOrder,
       childrenInHitTestOrder,
+      additionalActions ?? customAcccessibilityActions,
     );
   }
   void _updateNode(
@@ -531,6 +665,8 @@ class SemanticsUpdateBuilder extends NativeFieldWrapperClass2 {
     int actions,
     int textSelectionBase,
     int textSelectionExtent,
+    int scrollChildren,
+    int scrollIndex,
     double scrollPosition,
     double scrollExtentMax,
     double scrollExtentMin,
@@ -547,7 +683,30 @@ class SemanticsUpdateBuilder extends NativeFieldWrapperClass2 {
     Float64List transform,
     Int32List childrenInTraversalOrder,
     Int32List childrenInHitTestOrder,
+    Int32List additionalActions,
   ) native 'SemanticsUpdateBuilder_updateNode';
+
+  /// Update the custom semantics action associated with the given `id`.
+  ///
+  /// The name of the action exposed to the user is the `label`. For overriden
+  /// standard actions this value is ignored.
+  ///
+  /// The `hint` should describe what happens when an action occurs, not the
+  /// manner in which a tap is accomplished. For example, use "delete" instead
+  /// of "double tap to delete".
+  ///
+  /// The text direction of the `hint` and `label` is the same as the global
+  /// window.
+  ///
+  /// For overriden standard actions, `overrideId` corresponds with a
+  /// [SemanticsAction.index] value. For custom actions this argument should not be
+  /// provided.
+  void updateCustomAction({int id, String label, String hint, int overrideId = -1}) {
+    assert(id != null);
+    assert(overrideId != null);
+    _updateCustomAction(id, label, hint, overrideId);
+  }
+  void _updateCustomAction(int id, String label, String hint, int overrideId) native 'SemanticsUpdateBuilder_updateCustomAction';
 
   /// Creates a [SemanticsUpdate] object that encapsulates the updates recorded
   /// by this object.

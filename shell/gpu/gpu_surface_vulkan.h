@@ -7,32 +7,38 @@
 
 #include <memory>
 
+#include "flutter/fml/macros.h"
+#include "flutter/fml/memory/weak_ptr.h"
 #include "flutter/shell/common/surface.h"
 #include "flutter/vulkan/vulkan_native_surface.h"
 #include "flutter/vulkan/vulkan_window.h"
-#include "lib/fxl/macros.h"
-#include "lib/fxl/memory/weak_ptr.h"
 
 namespace shell {
 
 class GPUSurfaceVulkan : public Surface {
  public:
-  GPUSurfaceVulkan(fxl::RefPtr<vulkan::VulkanProcTable> proc_table,
+  GPUSurfaceVulkan(fml::RefPtr<vulkan::VulkanProcTable> proc_table,
                    std::unique_ptr<vulkan::VulkanNativeSurface> native_surface);
 
   ~GPUSurfaceVulkan() override;
 
+  // |shell::Surface|
   bool IsValid() override;
 
+  // |shell::Surface|
   std::unique_ptr<SurfaceFrame> AcquireFrame(const SkISize& size) override;
 
+  // |shell::Surface|
+  SkMatrix GetRootTransformation() const override;
+
+  // |shell::Surface|
   GrContext* GetContext() override;
 
  private:
   vulkan::VulkanWindow window_;
-  fxl::WeakPtrFactory<GPUSurfaceVulkan> weak_factory_;
+  fml::WeakPtrFactory<GPUSurfaceVulkan> weak_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(GPUSurfaceVulkan);
+  FML_DISALLOW_COPY_AND_ASSIGN(GPUSurfaceVulkan);
 };
 
 }  // namespace shell

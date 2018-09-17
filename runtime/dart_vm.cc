@@ -10,6 +10,12 @@
 #include <vector>
 
 #include "flutter/common/settings.h"
+#include "flutter/fml/arraysize.h"
+#include "flutter/fml/compiler_specific.h"
+#include "flutter/fml/file.h"
+#include "flutter/fml/logging.h"
+#include "flutter/fml/mapping.h"
+#include "flutter/fml/time/time_delta.h"
 #include "flutter/fml/trace_event.h"
 #include "flutter/lib/io/dart_io.h"
 #include "flutter/lib/ui/dart_runtime_hooks.h"
@@ -17,20 +23,15 @@
 #include "flutter/runtime/dart_isolate.h"
 #include "flutter/runtime/dart_service_isolate.h"
 #include "flutter/runtime/start_up.h"
-#include "lib/fxl/arraysize.h"
-#include "lib/fxl/compiler_specific.h"
-#include "lib/fxl/files/file.h"
-#include "lib/fxl/logging.h"
-#include "lib/fxl/time/time_delta.h"
-#include "lib/tonic/converter/dart_converter.h"
-#include "lib/tonic/dart_class_library.h"
-#include "lib/tonic/dart_class_provider.h"
-#include "lib/tonic/dart_sticky_error.h"
-#include "lib/tonic/file_loader/file_loader.h"
-#include "lib/tonic/logging/dart_error.h"
-#include "lib/tonic/scopes/dart_api_scope.h"
-#include "lib/tonic/typed_data/uint8_list.h"
 #include "third_party/dart/runtime/bin/embedded_dart_io.h"
+#include "third_party/tonic/converter/dart_converter.h"
+#include "third_party/tonic/dart_class_library.h"
+#include "third_party/tonic/dart_class_provider.h"
+#include "third_party/tonic/dart_sticky_error.h"
+#include "third_party/tonic/file_loader/file_loader.h"
+#include "third_party/tonic/logging/dart_error.h"
+#include "third_party/tonic/scopes/dart_api_scope.h"
+#include "third_party/tonic/typed_data/uint8_list.h"
 
 #ifdef ERROR
 #undef ERROR
@@ -65,6 +66,9 @@ static const char* kDartLanguageArgs[] = {
     "--background_compilation",
     "--await_is_keyword",
     "--causal_async_stacks",
+    "--strong",
+    "--reify_generic_functions",
+    "--sync_async",
     // clang-format on
 };
 
@@ -72,7 +76,7 @@ static const char* kDartPrecompilationArgs[] = {
     "--precompilation",
 };
 
-FXL_ALLOW_UNUSED_TYPE
+FML_ALLOW_UNUSED_TYPE
 static const char* kDartWriteProtectCodeArgs[] = {
     "--no_write_protect_code",
 };
@@ -80,23 +84,6 @@ static const char* kDartWriteProtectCodeArgs[] = {
 static const char* kDartAssertArgs[] = {
     // clang-format off
     "--enable_asserts",
-    // clang-format on
-};
-
-static const char* kDartCheckedModeArgs[] = {
-    // clang-format off
-    "--enable_type_checks",
-    "--error_on_bad_type",
-    "--error_on_bad_override",
-    // clang-format on
-};
-
-static const char* kDartStrongModeArgs[] = {
-    // clang-format off
-    "--strong",
-    "--reify_generic_functions",
-    // TODO(bkonyi): uncomment when sync-async is enabled in flutter/flutter.
-    // "--sync_async",
     // clang-format on
 };
 
@@ -112,7 +99,7 @@ static const char* kDartEndlessTraceBufferArgs[]{
     "--timeline_recorder=endless",
 };
 
-static const char* kDartFuchsiaTraceArgs[] FXL_ALLOW_UNUSED_TYPE = {
+static const char* kDartFuchsiaTraceArgs[] FML_ALLOW_UNUSED_TYPE = {
     "--systrace_timeline",
     "--timeline_streams=Compiler,Dart,Debugger,Embedder,GC,Isolate,VM",
 };
@@ -143,8 +130,8 @@ bool DartFileModifiedCallback(const char* source_url, int64_t since_ms) {
   // We add one to st_mtime because st_mtime has less precision than since_ms
   // and we want to treat the file as modified if the since time is between
   // ticks of the mtime.
-  fxl::TimeDelta mtime = fxl::TimeDelta::FromSeconds(info.st_mtime + 1);
-  fxl::TimeDelta since = fxl::TimeDelta::FromMilliseconds(since_ms);
+  fml::TimeDelta mtime = fml::TimeDelta::FromSeconds(info.st_mtime + 1);
+  fml::TimeDelta since = fml::TimeDelta::FromMilliseconds(since_ms);
 
   return mtime > since;
 }
@@ -156,14 +143,13 @@ Dart_Handle GetVMServiceAssetsArchiveCallback() {
     (FLUTTER_RUNTIME_MODE == FLUTTER_RUNTIME_MODE_DYNAMIC_RELEASE)
   return nullptr;
 #elif OS_FUCHSIA
-  std::vector<uint8_t> observatory_assets_archive;
-  if (!files::ReadFileToVector("pkg/data/observatory.tar",
-                               &observatory_assets_archive)) {
-    FXL_LOG(ERROR) << "Fail to load Observatory archive";
+  fml::FileMapping mapping("pkg/data/observatory.tar", false /* executable */);
+  if (mapping.GetSize() == 0 || mapping.GetMapping() == nullptr) {
+    FML_LOG(ERROR) << "Fail to load Observatory archive";
     return nullptr;
   }
-  return tonic::DartConverter<tonic::Uint8List>::ToDart(
-      observatory_assets_archive.data(), observatory_assets_archive.size());
+  return tonic::DartConverter<tonic::Uint8List>::ToDart(mapping.GetMapping(),
+                                                        mapping.GetSize());
 #else
   return tonic::DartConverter<tonic::Uint8List>::ToDart(
       ::dart::observatory::observatory_assets_archive,
@@ -195,6 +181,26 @@ static void ServiceStreamCancelCallback(const char* stream_id) {
 
 bool DartVM::IsRunningPrecompiledCode() {
   return Dart_IsPrecompiledRuntime();
+}
+
+bool DartVM::IsKernelMapping(const fml::FileMapping* mapping) {
+  if (mapping == nullptr) {
+    return false;
+  }
+
+  const uint8_t kKernelHeaderMagic[] = {0x90, 0xAB, 0xCD, 0xEF};
+  const size_t kKernelHeaderMagicSize = sizeof(kKernelHeaderMagic);
+
+  if (mapping->GetSize() < kKernelHeaderMagicSize) {
+    return false;
+  }
+
+  if (memcmp(kKernelHeaderMagic, mapping->GetMapping(),
+             kKernelHeaderMagicSize) != 0) {
+    return false;
+  }
+
+  return true;
 }
 
 static std::vector<const char*> ProfilingFlags(bool enable_profiling) {
@@ -233,18 +239,20 @@ static void EmbedderInformationCallback(Dart_EmbedderInformation* info) {
   info->name = "Flutter";
 }
 
-fxl::RefPtr<DartVM> DartVM::ForProcess(Settings settings) {
+fml::RefPtr<DartVM> DartVM::ForProcess(Settings settings) {
   return ForProcess(settings, nullptr, nullptr, nullptr);
 }
 
 static std::once_flag gVMInitialization;
-static fxl::RefPtr<DartVM> gVM;
+static std::mutex gVMMutex;
+static fml::RefPtr<DartVM> gVM;
 
-fxl::RefPtr<DartVM> DartVM::ForProcess(
+fml::RefPtr<DartVM> DartVM::ForProcess(
     Settings settings,
-    fxl::RefPtr<DartSnapshot> vm_snapshot,
-    fxl::RefPtr<DartSnapshot> isolate_snapshot,
-    fxl::RefPtr<DartSnapshot> shared_snapshot) {
+    fml::RefPtr<DartSnapshot> vm_snapshot,
+    fml::RefPtr<DartSnapshot> isolate_snapshot,
+    fml::RefPtr<DartSnapshot> shared_snapshot) {
+  std::lock_guard<std::mutex> lock(gVMMutex);
   std::call_once(gVMInitialization, [settings,          //
                                      vm_snapshot,       //
                                      isolate_snapshot,  //
@@ -254,20 +262,20 @@ fxl::RefPtr<DartVM> DartVM::ForProcess(
       vm_snapshot = DartSnapshot::VMSnapshotFromSettings(settings);
     }
     if (!(vm_snapshot && vm_snapshot->IsValid())) {
-      FXL_LOG(ERROR) << "VM snapshot must be valid.";
+      FML_LOG(ERROR) << "VM snapshot must be valid.";
       return;
     }
     if (!isolate_snapshot) {
       isolate_snapshot = DartSnapshot::IsolateSnapshotFromSettings(settings);
     }
     if (!(isolate_snapshot && isolate_snapshot->IsValid())) {
-      FXL_LOG(ERROR) << "Isolate snapshot must be valid.";
+      FML_LOG(ERROR) << "Isolate snapshot must be valid.";
       return;
     }
     if (!shared_snapshot) {
       shared_snapshot = DartSnapshot::Empty();
     }
-    gVM = fxl::MakeRefCounted<DartVM>(settings,                     //
+    gVM = fml::MakeRefCounted<DartVM>(settings,                     //
                                       std::move(vm_snapshot),       //
                                       std::move(isolate_snapshot),  //
                                       std::move(shared_snapshot)    //
@@ -276,23 +284,22 @@ fxl::RefPtr<DartVM> DartVM::ForProcess(
   return gVM;
 }
 
-fxl::RefPtr<DartVM> DartVM::ForProcessIfInitialized() {
+fml::RefPtr<DartVM> DartVM::ForProcessIfInitialized() {
+  std::lock_guard<std::mutex> lock(gVMMutex);
   return gVM;
 }
 
 DartVM::DartVM(const Settings& settings,
-               fxl::RefPtr<DartSnapshot> vm_snapshot,
-               fxl::RefPtr<DartSnapshot> isolate_snapshot,
-               fxl::RefPtr<DartSnapshot> shared_snapshot)
+               fml::RefPtr<DartSnapshot> vm_snapshot,
+               fml::RefPtr<DartSnapshot> isolate_snapshot,
+               fml::RefPtr<DartSnapshot> shared_snapshot)
     : settings_(settings),
       vm_snapshot_(std::move(vm_snapshot)),
       isolate_snapshot_(std::move(isolate_snapshot)),
       shared_snapshot_(std::move(shared_snapshot)),
-      platform_kernel_mapping_(
-          std::make_unique<fml::FileMapping>(settings.platform_kernel_path)),
       weak_factory_(this) {
   TRACE_EVENT0("flutter", "DartVMInitializer");
-  FXL_DLOG(INFO) << "Attempting Dart VM launch for mode: "
+  FML_DLOG(INFO) << "Attempting Dart VM launch for mode: "
                  << (IsRunningPrecompiledCode() ? "AOT" : "Interpreter");
 
   {
@@ -346,29 +353,12 @@ DartVM::DartVM(const Settings& settings,
               arraysize(kDartWriteProtectCodeArgs));
 #endif
 
-  const bool isolate_snapshot_is_dart_2 =
-      Dart_IsDart2Snapshot(isolate_snapshot_->GetData()->GetSnapshotPointer());
-
   const bool is_preview_dart2 =
-      (platform_kernel_mapping_->GetSize() > 0) || isolate_snapshot_is_dart_2;
+      Dart_IsDart2Snapshot(isolate_snapshot_->GetData()->GetSnapshotPointer());
+  FML_CHECK(is_preview_dart2) << "Not Dart 2!";
 
-  FXL_DLOG(INFO) << "Dart 2 " << (is_preview_dart2 ? "is" : "is NOT")
-                 << " enabled. Platform kernel: "
-                 << static_cast<bool>(platform_kernel_mapping_->GetSize() > 0)
-                 << " Isolate Snapshot is Dart 2: "
-                 << isolate_snapshot_is_dart_2;
-
-  if (is_preview_dart2) {
-    PushBackAll(&args, kDartStrongModeArgs, arraysize(kDartStrongModeArgs));
-    if (use_checked_mode) {
-      PushBackAll(&args, kDartAssertArgs, arraysize(kDartAssertArgs));
-    }
-  } else if (use_checked_mode) {
-    FXL_DLOG(INFO) << "Checked mode is ON";
+  if (use_checked_mode) {
     PushBackAll(&args, kDartAssertArgs, arraysize(kDartAssertArgs));
-    PushBackAll(&args, kDartCheckedModeArgs, arraysize(kDartCheckedModeArgs));
-  } else {
-    FXL_DLOG(INFO) << "Is not Dart 2 and Checked mode is OFF";
   }
 
   if (settings.start_paused) {
@@ -395,7 +385,7 @@ DartVM::DartVM(const Settings& settings,
 
   char* flags_error = Dart_SetVMFlags(args.size(), args.data());
   if (flags_error) {
-    FXL_LOG(FATAL) << "Error while setting Dart VM flags: " << flags_error;
+    FML_LOG(FATAL) << "Error while setting Dart VM flags: " << flags_error;
     ::free(flags_error);
   }
 
@@ -420,7 +410,7 @@ DartVM::DartVM(const Settings& settings,
     params.entropy_source = DartIO::EntropySource;
     char* init_error = Dart_Initialize(&params);
     if (init_error) {
-      FXL_LOG(FATAL) << "Error while initializing the Dart VM: " << init_error;
+      FML_LOG(FATAL) << "Error while initializing the Dart VM: " << init_error;
       ::free(init_error);
     }
     // Send the earliest available timestamp in the application lifecycle to
@@ -453,7 +443,7 @@ DartVM::~DartVM() {
   }
   char* result = Dart_Cleanup();
   if (result != nullptr) {
-    FXL_LOG(ERROR) << "Could not cleanly shut down the Dart VM. Message: \""
+    FML_LOG(ERROR) << "Could not cleanly shut down the Dart VM. Message: \""
                    << result << "\".";
     free(result);
   }
@@ -461,10 +451,6 @@ DartVM::~DartVM() {
 
 const Settings& DartVM::GetSettings() const {
   return settings_;
-}
-
-const fml::Mapping& DartVM::GetPlatformKernel() const {
-  return *platform_kernel_mapping_.get();
 }
 
 const DartSnapshot& DartVM::GetVMSnapshot() const {
@@ -475,11 +461,11 @@ IsolateNameServer* DartVM::GetIsolateNameServer() {
   return &isolate_name_server_;
 }
 
-fxl::RefPtr<DartSnapshot> DartVM::GetIsolateSnapshot() const {
+fml::RefPtr<DartSnapshot> DartVM::GetIsolateSnapshot() const {
   return isolate_snapshot_;
 }
 
-fxl::RefPtr<DartSnapshot> DartVM::GetSharedSnapshot() const {
+fml::RefPtr<DartSnapshot> DartVM::GetSharedSnapshot() const {
   return shared_snapshot_;
 }
 
@@ -487,7 +473,7 @@ ServiceProtocol& DartVM::GetServiceProtocol() {
   return service_protocol_;
 }
 
-fxl::WeakPtr<DartVM> DartVM::GetWeakPtr() {
+fml::WeakPtr<DartVM> DartVM::GetWeakPtr() {
   return weak_factory_.GetWeakPtr();
 }
 

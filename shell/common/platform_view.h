@@ -9,14 +9,15 @@
 
 #include "flutter/common/task_runners.h"
 #include "flutter/flow/texture.h"
+#include "flutter/fml/macros.h"
 #include "flutter/fml/memory/weak_ptr.h"
+#include "flutter/lib/ui/semantics/custom_accessibility_action.h"
 #include "flutter/lib/ui/semantics/semantics_node.h"
 #include "flutter/lib/ui/window/platform_message.h"
 #include "flutter/lib/ui/window/pointer_data_packet.h"
 #include "flutter/lib/ui/window/viewport_metrics.h"
 #include "flutter/shell/common/surface.h"
 #include "flutter/shell/common/vsync_waiter.h"
-#include "lib/fxl/macros.h"
 #include "third_party/skia/include/core/SkSize.h"
 #include "third_party/skia/include/gpu/GrContext.h"
 
@@ -28,44 +29,36 @@ class PlatformView {
  public:
   class Delegate {
    public:
-    virtual void OnPlatformViewCreated(const PlatformView& view,
-                                       std::unique_ptr<Surface> surface) = 0;
+    virtual void OnPlatformViewCreated(std::unique_ptr<Surface> surface) = 0;
 
-    virtual void OnPlatformViewDestroyed(const PlatformView& view) = 0;
+    virtual void OnPlatformViewDestroyed() = 0;
 
-    virtual void OnPlatformViewSetNextFrameCallback(const PlatformView& view,
-                                                    fxl::Closure closure) = 0;
+    virtual void OnPlatformViewSetNextFrameCallback(fml::closure closure) = 0;
 
     virtual void OnPlatformViewSetViewportMetrics(
-        const PlatformView& view,
         const blink::ViewportMetrics& metrics) = 0;
 
     virtual void OnPlatformViewDispatchPlatformMessage(
-        const PlatformView& view,
-        fxl::RefPtr<blink::PlatformMessage> message) = 0;
+        fml::RefPtr<blink::PlatformMessage> message) = 0;
 
     virtual void OnPlatformViewDispatchPointerDataPacket(
-        const PlatformView& view,
         std::unique_ptr<blink::PointerDataPacket> packet) = 0;
 
     virtual void OnPlatformViewDispatchSemanticsAction(
-        const PlatformView& view,
         int32_t id,
         blink::SemanticsAction action,
         std::vector<uint8_t> args) = 0;
 
-    virtual void OnPlatformViewSetSemanticsEnabled(const PlatformView& view,
-                                                   bool enabled) = 0;
+    virtual void OnPlatformViewSetSemanticsEnabled(bool enabled) = 0;
+
+    virtual void OnPlatformViewSetAccessibilityFeatures(int32_t flags) = 0;
 
     virtual void OnPlatformViewRegisterTexture(
-        const PlatformView& view,
         std::shared_ptr<flow::Texture> texture) = 0;
 
-    virtual void OnPlatformViewUnregisterTexture(const PlatformView& view,
-                                                 int64_t texture_id) = 0;
+    virtual void OnPlatformViewUnregisterTexture(int64_t texture_id) = 0;
 
     virtual void OnPlatformViewMarkTextureFrameAvailable(
-        const PlatformView& view,
         int64_t texture_id) = 0;
   };
 
@@ -75,13 +68,15 @@ class PlatformView {
 
   virtual std::unique_ptr<VsyncWaiter> CreateVSyncWaiter();
 
-  void DispatchPlatformMessage(fxl::RefPtr<blink::PlatformMessage> message);
+  void DispatchPlatformMessage(fml::RefPtr<blink::PlatformMessage> message);
 
   void DispatchSemanticsAction(int32_t id,
                                blink::SemanticsAction action,
                                std::vector<uint8_t> args);
 
   virtual void SetSemanticsEnabled(bool enabled);
+
+  virtual void SetAccessibilityFeatures(int32_t flags);
 
   void SetViewportMetrics(const blink::ViewportMetrics& metrics);
 
@@ -93,14 +88,21 @@ class PlatformView {
   // non-platform task runner.
   virtual sk_sp<GrContext> CreateResourceContext() const;
 
+  // Unlike all other methods on the platform view, this one may be called on a
+  // non-platform task runner.
+  virtual void ReleaseResourceContext() const;
+
   fml::WeakPtr<PlatformView> GetWeakPtr() const;
 
-  virtual void UpdateSemantics(blink::SemanticsNodeUpdates update);
+  virtual void UpdateSemantics(blink::SemanticsNodeUpdates updates,
+                               blink::CustomAccessibilityActionUpdates actions);
 
   virtual void HandlePlatformMessage(
-      fxl::RefPtr<blink::PlatformMessage> message);
+      fml::RefPtr<blink::PlatformMessage> message);
 
-  void SetNextFrameCallback(fxl::Closure closure);
+  virtual void OnPreEngineRestart() const;
+
+  void SetNextFrameCallback(fml::closure closure);
 
   void DispatchPointerDataPacket(
       std::unique_ptr<blink::PointerDataPacket> packet);
@@ -117,7 +119,6 @@ class PlatformView {
  protected:
   PlatformView::Delegate& delegate_;
   const blink::TaskRunners task_runners_;
-  std::unique_ptr<VsyncWaiter> vsync_waiter_;
 
   SkISize size_;
   fml::WeakPtrFactory<PlatformView> weak_factory_;
@@ -125,7 +126,7 @@ class PlatformView {
   virtual std::unique_ptr<Surface> CreateRenderingSurface();
 
  private:
-  FXL_DISALLOW_COPY_AND_ASSIGN(PlatformView);
+  FML_DISALLOW_COPY_AND_ASSIGN(PlatformView);
 };
 
 }  // namespace shell

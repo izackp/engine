@@ -11,10 +11,10 @@
 #include "flutter/assets/asset_manager.h"
 #include "flutter/assets/asset_resolver.h"
 #include "flutter/common/settings.h"
+#include "flutter/fml/macros.h"
 #include "flutter/fml/mapping.h"
+#include "flutter/fml/unique_fd.h"
 #include "flutter/shell/common/isolate_configuration.h"
-#include "lib/fxl/files/unique_fd.h"
-#include "lib/fxl/macros.h"
 
 namespace shell {
 
@@ -37,9 +37,13 @@ class RunConfiguration {
 
   void SetEntrypoint(std::string entrypoint);
 
+  void SetEntrypointAndLibrary(std::string entrypoint, std::string library);
+
   fml::RefPtr<blink::AssetManager> GetAssetManager() const;
 
   const std::string& GetEntrypoint() const;
+
+  const std::string& GetEntrypointLibrary() const;
 
   std::unique_ptr<IsolateConfiguration> TakeIsolateConfiguration();
 
@@ -47,8 +51,9 @@ class RunConfiguration {
   std::unique_ptr<IsolateConfiguration> isolate_configuration_;
   fml::RefPtr<blink::AssetManager> asset_manager_;
   std::string entrypoint_ = "main";
+  std::string entrypoint_library_ = "";
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(RunConfiguration);
+  FML_DISALLOW_COPY_AND_ASSIGN(RunConfiguration);
 };
 
 }  // namespace shell
