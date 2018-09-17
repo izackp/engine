@@ -71,14 +71,6 @@ class LayerBuilder {
                            int64_t texture_id,
                            bool freeze) = 0;
 
-#if defined(OS_FUCHSIA)
-  virtual void PushChildScene(
-      const SkPoint& offset,
-      const SkSize& size,
-      fml::RefPtr<flow::ExportNodeHolder> export_token_holder,
-      bool hit_testable) = 0;
-#endif  // defined(OS_FUCHSIA)
-
   virtual void Pop() = 0;
 
   virtual std::unique_ptr<flow::Layer> TakeLayer() = 0;

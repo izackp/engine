@@ -126,7 +126,6 @@ source_set("txt") {
 }
 
 txt_common_executable_deps = [
-  "//third_party/dart/runtime:libdart_jit",  # For logging.
   "$flutter_root/fml",  # For ICU initialization.
 ]
 

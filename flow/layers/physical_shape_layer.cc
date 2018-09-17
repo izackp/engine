@@ -46,10 +46,6 @@ void PhysicalShapeLayer::Preroll(PrerollContext* context,
   if (elevation_ == 0) {
     set_paint_bounds(path_.getBounds());
   } else {
-#if defined(OS_FUCHSIA)
-    // Let the system compositor draw all shadows for us.
-    set_needs_system_composite(true);
-#else
     // Add some margin to the paint bounds to leave space for the shadow.
     // The margin is hardcoded to an arbitrary maximum for now because Skia
     // doesn't provide a way to calculate it.  We fill this whole region
@@ -57,26 +53,8 @@ void PhysicalShapeLayer::Preroll(PrerollContext* context,
     SkRect bounds(path_.getBounds());
     bounds.outset(20.0, 20.0);
     set_paint_bounds(bounds);
-#endif  // defined(OS_FUCHSIA)
   }
 }
-
-#if defined(OS_FUCHSIA)
-
-void PhysicalShapeLayer::UpdateScene(SceneUpdateContext& context) {
-  FML_DCHECK(needs_system_composite());
-
-  SceneUpdateContext::Frame frame(context, frameRRect_, color_, elevation_);
-  for (auto& layer : layers()) {
-    if (layer->needs_painting()) {
-      frame.AddPaintedLayer(layer.get());
-    }
-  }
-
-  UpdateSceneChildren(context);
-}
-
-#endif  // defined(OS_FUCHSIA)
 
 void PhysicalShapeLayer::Paint(PaintContext& context) const {
   TRACE_EVENT0("flutter", "PhysicalShapeLayer::Paint");

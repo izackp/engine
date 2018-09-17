@@ -24,14 +24,6 @@
 #include "third_party/skia/include/core/SkRRect.h"
 #include "third_party/skia/include/core/SkRect.h"
 
-#if defined(OS_FUCHSIA)
-
-#include "flutter/flow/scene_update_context.h"  //nogncheck
-#include "lib/ui/scenic/cpp/resources.h"        //nogncheck
-#include "lib/ui/scenic/cpp/session.h"          //nogncheck
-
-#endif  // defined(OS_FUCHSIA)
-
 namespace flow {
 
 // This should be an exact copy of the Clip enum in painting.dart.
@@ -82,11 +74,6 @@ class Layer {
   };
 
   virtual void Paint(PaintContext& context) const = 0;
-
-#if defined(OS_FUCHSIA)
-  // Updates the system composited scene.
-  virtual void UpdateScene(SceneUpdateContext& context);
-#endif
 
   ContainerLayer* parent() const { return parent_; }
 

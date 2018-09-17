@@ -70,24 +70,6 @@ source_set("flow") {
     "//third_party/skia:gpu",
   ]
 
-  if (is_fuchsia) {
-    sources += [
-      "export_node.cc",
-      "export_node.h",
-      "layers/child_scene_layer.cc",
-      "layers/child_scene_layer.h",
-      "scene_update_context.cc",
-      "scene_update_context.h",
-    ]
-
-    public_deps += [
-      "//garnet/public/fidl/fuchsia.ui.scenic",
-      "//garnet/public/lib/ui/scenic/cpp",
-      "//topaz/public/dart-pkg/zircon",
-    ]
-
-    public_deps += [ "//zircon/public/lib/zx" ]
-  }
 }
 
 executable("flow_unittests") {
@@ -101,7 +83,6 @@ executable("flow_unittests") {
   deps = [
     ":flow",
     "$flutter_root/testing",
-    "//third_party/dart/runtime:libdart_jit",  # for tracing
     "//third_party/skia",
   ]
 }

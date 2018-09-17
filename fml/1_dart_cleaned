@@ -1,0 +1,13 @@
+removed dep:
+    fml:
+        "//third_party/dart/runtime:dart_api",
+    fml_unittests:
+        "//third_party/dart/runtime:libdart_jit",
+    
+
+from:
+    trace_event.cc
+
+Unit Tests will probably fail
+
+Leaving fuchsia dependencies is fine here since these a wrappers around system calls

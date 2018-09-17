@@ -30,24 +30,11 @@ void SceneHost::RegisterNatives(tonic::DartLibraryNatives* natives) {
                      FOR_EACH_BINDING(DART_REGISTER_NATIVE)});
 }
 
-#if defined(OS_FUCHSIA)
-fml::RefPtr<SceneHost> SceneHost::create(
-    fml::RefPtr<zircon::dart::Handle> export_token_handle) {
-  return fml::MakeRefCounted<SceneHost>(export_token_handle);
-}
-
-SceneHost::SceneHost(fml::RefPtr<zircon::dart::Handle> export_token_handle) {
-  export_node_holder_ = fml::MakeRefCounted<flow::ExportNodeHolder>(
-      blink::UIDartState::Current()->GetTaskRunners().GetGPUTaskRunner(),
-      export_token_handle);
-}
-#else
 fml::RefPtr<SceneHost> SceneHost::create(Dart_Handle export_token_handle) {
   return fml::MakeRefCounted<SceneHost>(export_token_handle);
 }
 
 SceneHost::SceneHost(Dart_Handle export_token_handle) {}
-#endif
 
 SceneHost::~SceneHost() {}
 

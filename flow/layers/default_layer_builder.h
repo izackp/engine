@@ -73,14 +73,6 @@ class DefaultLayerBuilder final : public LayerBuilder {
                    int64_t texture_id,
                    bool freeze) override;
 
-#if defined(OS_FUCHSIA)
-  // |flow::LayerBuilder|
-  void PushChildScene(const SkPoint& offset,
-                      const SkSize& size,
-                      fml::RefPtr<flow::ExportNodeHolder> export_token_holder,
-                      bool hit_testable) override;
-#endif  // defined(OS_FUCHSIA)
-
   // |flow::LayerBuilder|
   void Pop() override;
 

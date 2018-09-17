@@ -27,11 +27,6 @@ class LayerTree {
   void Preroll(CompositorContext::ScopedFrame& frame,
                bool ignore_raster_cache = false);
 
-#if defined(OS_FUCHSIA)
-  void UpdateScene(SceneUpdateContext& context,
-                   scenic::ContainerNode& container);
-#endif
-
   void Paint(CompositorContext::ScopedFrame& frame) const;
 
   sk_sp<SkPicture> Flatten(const SkRect& bounds);

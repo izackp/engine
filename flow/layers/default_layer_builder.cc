@@ -20,10 +20,6 @@
 #include "flutter/flow/layers/texture_layer.h"
 #include "flutter/flow/layers/transform_layer.h"
 
-#if defined(OS_FUCHSIA)
-#include "flutter/flow/layers/child_scene_layer.h"
-#endif  // defined(OS_FUCHSIA)
-
 namespace flow {
 
 static const SkRect kGiantRect = SkRect::MakeLTRB(-1E9F, -1E9F, 1E9F, 1E9F);
@@ -175,29 +171,6 @@ void DefaultLayerBuilder::PushTexture(const SkPoint& offset,
   layer->set_freeze(freeze);
   current_layer_->Add(std::move(layer));
 }
-
-#if defined(OS_FUCHSIA)
-void DefaultLayerBuilder::PushChildScene(
-    const SkPoint& offset,
-    const SkSize& size,
-    fml::RefPtr<flow::ExportNodeHolder> export_token_holder,
-    bool hit_testable) {
-  if (!current_layer_) {
-    return;
-  }
-  SkRect sceneRect =
-      SkRect::MakeXYWH(offset.x(), offset.y(), size.width(), size.height());
-  if (!SkRect::Intersects(sceneRect, cull_rects_.top())) {
-    return;
-  }
-  auto layer = std::make_unique<flow::ChildSceneLayer>();
-  layer->set_offset(offset);
-  layer->set_size(size);
-  layer->set_export_node_holder(std::move(export_token_holder));
-  layer->set_hit_testable(hit_testable);
-  current_layer_->Add(std::move(layer));
-}
-#endif  // defined(OS_FUCHSIA)
 
 void DefaultLayerBuilder::Pop() {
   if (!current_layer_) {

@@ -1,0 +1,25 @@
+TO NOTE: I removed fuchsia dependencies however all these things have been wrapped around #ifdefs so these changes are inconsequncial
+My worry was that this somehow connected to dart but after removing everything I'm starting to doubt it was necessary. 
+
+It seems like zircon is the microkernal powering the fuchsia os
+
+Fuchsia has it's own builtin UI library. The zircon library allows us to use it.
+
+Removed:
+child_scene_layer.cc .h - Only used by Fuchsia - Instead of creating independent scenes it's purpose is to create a scene within the fuchia os scene tree
+scene_update_context.cc .h
+export_node.cc .h
+
+scenic and zircon dependencies
+
+Removed Funcs:
+PushChildScene from layer_builder and default_layer_builder
+void ClipPathLayer::UpdateScene(SceneUpdateContext& context) 
+void ClipRectLayer::UpdateScene(SceneUpdateContext& context)
+void ClipRRectLayer::UpdateScene(SceneUpdateContext& context) override;
+void ContainerLayer::UpdateScene(SceneUpdateContext& context)
+void ContainerLayer::UpdateSceneChildren(SceneUpdateContext& context)
+void LayerTree::UpdateScene(SceneUpdateContext& context, scenic::ContainerNode& container)
+void Layer::UpdateScene(SceneUpdateContext& context)
+void PhysicalShapeLayer::UpdateScene(SceneUpdateContext& context
+void TransformLayer::UpdateScene(SceneUpdateContext& context)

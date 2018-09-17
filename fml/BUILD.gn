@@ -65,8 +65,6 @@ source_set("fml") {
   public_deps = []
 
   deps = [
-    "//third_party/dart/runtime:dart_api",
-
     # These need to be in sync with the Fuchsia buildroot.
     "//third_party/icu",
   ]
@@ -180,7 +178,6 @@ executable("fml_unittests") {
 
   deps = [
     "$flutter_root/fml",
-    "$flutter_root/testing",
-    "//third_party/dart/runtime:libdart_jit",
+    "$flutter_root/testing"
   ]
 }

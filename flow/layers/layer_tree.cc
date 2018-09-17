@@ -35,31 +35,6 @@ void LayerTree::Preroll(CompositorContext::ScopedFrame& frame,
   root_layer_->Preroll(&context, frame.root_surface_transformation());
 }
 
-#if defined(OS_FUCHSIA)
-void LayerTree::UpdateScene(SceneUpdateContext& context,
-                            scenic::ContainerNode& container) {
-  TRACE_EVENT0("flutter", "LayerTree::UpdateScene");
-  const auto& metrics = context.metrics();
-  SceneUpdateContext::Transform transform(context,                  // context
-                                          1.0f / metrics->scale_x,  // X
-                                          1.0f / metrics->scale_y,  // Y
-                                          1.0f / metrics->scale_z   // Z
-  );
-  SceneUpdateContext::Frame frame(
-      context,
-      SkRRect::MakeRect(
-          SkRect::MakeWH(frame_size_.width(), frame_size_.height())),
-      SK_ColorTRANSPARENT, 0.f);
-  if (root_layer_->needs_system_composite()) {
-    root_layer_->UpdateScene(context);
-  }
-  if (root_layer_->needs_painting()) {
-    frame.AddPaintedLayer(root_layer_.get());
-  }
-  container.AddChild(transform.entity_node());
-}
-#endif
-
 void LayerTree::Paint(CompositorContext::ScopedFrame& frame) const {
   TRACE_EVENT0("flutter", "LayerTree::Paint");
   Layer::PaintContext context = {

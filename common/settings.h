@@ -35,22 +35,22 @@ struct Settings {
   std::string application_kernel_asset;
   std::string application_kernel_list_asset;
 
-  std::string main_dart_file_path;
+  //std::string main_dart_file_path;
   std::string packages_file_path;
 
   std::string temp_directory_path;
-  std::vector<std::string> dart_flags;
+  //std::vector<std::string> dart_flags;
 
   // Isolate settings
   bool start_paused = false;
   bool trace_skia = false;
   bool trace_startup = false;
   bool endless_trace_buffer = false;
-  bool enable_dart_profiling = false;
-  bool dart_non_checked_mode = false;
+  //bool enable_dart_profiling = false;
+  //bool dart_non_checked_mode = false;
   // Used as the script URI in debug messages. Does not affect how the Dart code
   // is executed.
-  std::string advisory_script_uri = "main.dart";
+  //std::string advisory_script_uri = "main.dart";
   // Used as the script entrypoint in debug messages. Does not affect how the
   // Dart code is executed.
   std::string advisory_script_entrypoint = "main";

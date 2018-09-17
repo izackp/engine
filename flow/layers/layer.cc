@@ -18,10 +18,6 @@ Layer::~Layer() = default;
 
 void Layer::Preroll(PrerollContext* context, const SkMatrix& matrix) {}
 
-#if defined(OS_FUCHSIA)
-void Layer::UpdateScene(SceneUpdateContext& context) {}
-#endif  // defined(OS_FUCHSIA)
-
 Layer::AutoSaveLayer::AutoSaveLayer(const PaintContext& paint_context,
                                     const SkRect& bounds,
                                     const SkPaint* paint)

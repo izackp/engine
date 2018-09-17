@@ -20,10 +20,6 @@ class TransformLayer : public ContainerLayer {
 
   void Paint(PaintContext& context) const override;
 
-#if defined(OS_FUCHSIA)
-  void UpdateScene(SceneUpdateContext& context) override;
-#endif  // defined(OS_FUCHSIA)
-
  private:
   SkMatrix transform_;
 

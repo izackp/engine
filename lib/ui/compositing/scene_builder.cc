@@ -150,12 +150,7 @@ void SceneBuilder::addChildScene(double dx,
                                  double height,
                                  SceneHost* sceneHost,
                                  bool hitTestable) {
-#if defined(OS_FUCHSIA)
-  layer_builder_->PushChildScene(SkPoint::Make(dx, dy),            //
-                                 SkSize::Make(width, height),      //
-                                 sceneHost->export_node_holder(),  //
-                                 hitTestable);
-#endif  // defined(OS_FUCHSIA)
+
 }
 
 void SceneBuilder::addPerformanceOverlay(uint64_t enabledOptions,
