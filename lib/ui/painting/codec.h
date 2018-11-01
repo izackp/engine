@@ -11,34 +11,41 @@
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkImage.h"
 
-using tonic::DartPersistentValue;
-
-namespace tonic {
-class DartLibraryNatives;
-}  // namespace tonic
-
 namespace blink {
+
+//refer to ConvertImageInfo on how to populate this data
+struct ImageInfo {
+  SkImageInfo sk_info;
+  size_t row_bytes;
+};
+
+//image_info can be null. Null seems to imply that the data is compressed (png)
+char* InstantiateImageCodec(
+  const uint8_t* list, 
+  int count, 
+  std::unique_ptr<ImageInfo> image_info, 
+  void (*callback)(fml::RefPtr<Codec> codec));
 
 // A handle to an SkCodec object.
 //
 // Doesn't mirror SkCodec's API but provides a simple sequential access API.
 class Codec : public RefCountedDartWrappable<Codec> {
-  DEFINE_WRAPPERTYPEINFO();
+  //DEFINE_WRAPPERTYPEINFO();
 
  public:
   virtual int frameCount() = 0;
   virtual int repetitionCount() = 0;
-  virtual Dart_Handle getNextFrame(Dart_Handle callback_handle) = 0;
+  virtual char* getNextFrame(void (*callback)(fml::RefPtr<FrameInfo> frameInfo)) = 0;
   void dispose();
 
-  static void RegisterNatives(tonic::DartLibraryNatives* natives);
+  //static void RegisterNatives(tonic::DartLibraryNatives* natives);
 };
 
 class MultiFrameCodec : public Codec {
  public:
   int frameCount() { return frameInfos_.size(); }
   int repetitionCount() { return repetitionCount_; }
-  Dart_Handle getNextFrame(Dart_Handle args);
+  char* getNextFrame(void (*callback)(fml::RefPtr<FrameInfo> frameInfo));
 
  private:
   MultiFrameCodec(std::unique_ptr<SkCodec> codec);
@@ -48,7 +55,7 @@ class MultiFrameCodec : public Codec {
   sk_sp<SkImage> GetNextFrameImage(fml::WeakPtr<GrContext> resourceContext);
 
   void GetNextFrameAndInvokeCallback(
-      std::unique_ptr<DartPersistentValue> callback,
+      void (*callback)(fml::RefPtr<FrameInfo> frameInfo),
       fml::RefPtr<fml::TaskRunner> ui_task_runner,
       fml::WeakPtr<GrContext> resourceContext,
       fml::RefPtr<flow::SkiaUnrefQueue> unref_queue,
@@ -69,7 +76,7 @@ class SingleFrameCodec : public Codec {
  public:
   int frameCount() { return 1; }
   int repetitionCount() { return 0; }
-  Dart_Handle getNextFrame(Dart_Handle args);
+  char* getNextFrame(void (*callback)(fml::RefPtr<FrameInfo> frameInfo));
 
  private:
   SingleFrameCodec(fml::RefPtr<FrameInfo> frame) : frame_(std::move(frame)) {}

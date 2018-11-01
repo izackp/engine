@@ -52,7 +52,7 @@ GPUSurfaceGL::GPUSurfaceGL(GPUSurfaceGLDelegate* delegate)
   // ES2 shading language when the ES3 external image extension is missing.
   options.fPreferExternalImagesOverES3 = true;
 
-  auto interface =
+  auto glInterface =
       proc_resolver_
           ? GrGLMakeAssembledGLESInterface(
                 this /* context */,
@@ -63,7 +63,7 @@ GPUSurfaceGL::GPUSurfaceGL(GPUSurfaceGLDelegate* delegate)
                 })
           : GrGLMakeNativeInterface();
 
-  auto context = GrContext::MakeGL(interface, options);
+  auto context = GrContext::MakeGL(glInterface, options);
 
   if (context == nullptr) {
     FML_LOG(ERROR) << "Failed to setup Skia Gr context.";

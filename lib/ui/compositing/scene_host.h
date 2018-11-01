@@ -7,30 +7,23 @@
 
 #include <stdint.h>
 
-#include "flutter/fml/build_config.h"
 #include "flutter/lib/ui/dart_wrapper.h"
-
-namespace tonic {
-class DartLibraryNatives;
-}  // namespace tonic
+#include "flutter/fml/build_config.h"
 
 namespace blink {
 
 class SceneHost : public RefCountedDartWrappable<SceneHost> {
-  DEFINE_WRAPPERTYPEINFO();
   FML_FRIEND_MAKE_REF_COUNTED(SceneHost);
 
  public:
-  static fml::RefPtr<SceneHost> create(Dart_Handle export_token_handle);
+  static fml::RefPtr<SceneHost> create();
 
   ~SceneHost() override;
 
   void dispose();
 
-  static void RegisterNatives(tonic::DartLibraryNatives* natives);
-
  private:
-  explicit SceneHost(Dart_Handle export_token_handle);
+  explicit SceneHost();
 };
 
 }  // namespace blink

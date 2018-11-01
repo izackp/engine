@@ -11,19 +11,10 @@
 #include "flutter/lib/ui/painting/frame_info.h"
 #include "third_party/skia/include/codec/SkCodec.h"
 #include "third_party/skia/include/core/SkPixelRef.h"
-#include "third_party/tonic/dart_binding_macros.h"
-#include "third_party/tonic/dart_library_natives.h"
-#include "third_party/tonic/dart_state.h"
-#include "third_party/tonic/logging/dart_invoke.h"
-#include "third_party/tonic/typed_data/uint8_list.h"
 
 #ifdef ERROR
 #undef ERROR
 #endif
-
-using tonic::DartInvoke;
-using tonic::DartPersistentValue;
-using tonic::ToDart;
 
 namespace blink {
 
@@ -32,31 +23,11 @@ namespace {
 static constexpr const char* kInitCodecTraceTag = "InitCodec";
 static constexpr const char* kCodecNextFrameTraceTag = "CodecNextFrame";
 
-// This must be kept in sync with the enum in painting.dart
-enum PixelFormat {
-  kRGBA8888,
-  kBGRA8888,
-};
-
-struct ImageInfo {
-  SkImageInfo sk_info;
-  size_t row_bytes;
-};
-
 static void InvokeCodecCallback(fml::RefPtr<Codec> codec,
-                                std::unique_ptr<DartPersistentValue> callback,
+                                void (*callback)(fml::RefPtr<Codec> codec),
                                 size_t trace_id) {
-  std::shared_ptr<tonic::DartState> dart_state = callback->dart_state().lock();
-  if (!dart_state) {
-    TRACE_FLOW_END("flutter", kInitCodecTraceTag, trace_id);
-    return;
-  }
-  tonic::DartState::Scope scope(dart_state);
-  if (!codec) {
-    DartInvoke(callback->value(), {Dart_Null()});
-  } else {
-    DartInvoke(callback->value(), {ToDart(codec)});
-  }
+
+  (*callback) (codec);
   TRACE_FLOW_END("flutter", kInitCodecTraceTag, trace_id);
 }
 
@@ -149,7 +120,7 @@ void InitCodecAndInvokeCodecCallback(
     fml::RefPtr<fml::TaskRunner> ui_task_runner,
     fml::WeakPtr<GrContext> context,
     fml::RefPtr<flow::SkiaUnrefQueue> unref_queue,
-    std::unique_ptr<DartPersistentValue> callback,
+    void (*callback)(fml::RefPtr<Codec> codec),
     sk_sp<SkData> buffer,
     std::unique_ptr<ImageInfo> image_info,
     size_t trace_id) {
@@ -162,12 +133,12 @@ void InitCodecAndInvokeCodecCallback(
         InitCodec(context, std::move(buffer), std::move(unref_queue), trace_id);
   }
   ui_task_runner->PostTask(
-      fml::MakeCopyable([callback = std::move(callback),
+      fml::MakeCopyable([callback = callback,
                          codec = std::move(codec), trace_id]() mutable {
-        InvokeCodecCallback(std::move(codec), std::move(callback), trace_id);
+        InvokeCodecCallback(std::move(codec), callback, trace_id);
       }));
 }
-
+/*
 bool ConvertImageInfo(Dart_Handle image_info_handle,
                       Dart_NativeArguments args,
                       ImageInfo* image_info) {
@@ -234,63 +205,38 @@ bool ConvertImageInfo(Dart_Handle image_info_handle,
 
   return true;
 }
-
-void InstantiateImageCodec(Dart_NativeArguments args) {
+*/
+char* InstantiateImageCodec(const uint8_t* list, int count, std::unique_ptr<ImageInfo> image_info, void (*callback)(fml::RefPtr<Codec> codec)) {
   static size_t trace_counter = 1;
   const size_t trace_id = trace_counter++;
   TRACE_FLOW_BEGIN("flutter", kInitCodecTraceTag, trace_id);
 
-  Dart_Handle callback_handle = Dart_GetNativeArgument(args, 1);
-  if (!Dart_IsClosure(callback_handle)) {
+  if (callback == nullptr) {
     TRACE_FLOW_END("flutter", kInitCodecTraceTag, trace_id);
-    Dart_SetReturnValue(args, ToDart("Callback must be a function"));
-    return;
-  }
-
-  Dart_Handle image_info_handle = Dart_GetNativeArgument(args, 2);
-  std::unique_ptr<ImageInfo> image_info;
-  if (!Dart_IsNull(image_info_handle)) {
-    image_info = std::make_unique<ImageInfo>();
-    if (!ConvertImageInfo(image_info_handle, args, image_info.get())) {
-      TRACE_FLOW_END("flutter", kInitCodecTraceTag, trace_id);
-      return;
-    }
-  }
-
-  Dart_Handle exception = nullptr;
-  tonic::Uint8List list =
-      tonic::DartConverter<tonic::Uint8List>::FromArguments(args, 0, exception);
-  if (exception) {
-    TRACE_FLOW_END("flutter", kInitCodecTraceTag, trace_id);
-    Dart_SetReturnValue(args, exception);
-    return;
+    return "Callback must be a function";
   }
 
   if (image_info) {
     int expected_size = image_info->row_bytes * image_info->sk_info.height();
-    if (list.num_elements() < expected_size) {
+    if (count < expected_size) {
       TRACE_FLOW_END("flutter", kInitCodecTraceTag, trace_id);
-      list.Release();
-      Dart_SetReturnValue(
-          args, ToDart("Pixel buffer size does not match image size"));
-      return;
+      return "Pixel buffer size does not match image size";
     }
   }
 
-  auto buffer = SkData::MakeWithCopy(list.data(), list.num_elements());
+  auto buffer = SkData::MakeWithCopy(list, count);
 
   auto dart_state = UIDartState::Current();
 
   const auto& task_runners = dart_state->GetTaskRunners();
   task_runners.GetIOTaskRunner()->PostTask(fml::MakeCopyable(
-      [callback = std::make_unique<DartPersistentValue>(
-           tonic::DartState::Current(), callback_handle),
+      [callback = callback,
        buffer = std::move(buffer), trace_id, image_info = std::move(image_info),
        ui_task_runner = task_runners.GetUITaskRunner(),
        context = dart_state->GetResourceContext(),
        queue = UIDartState::Current()->GetSkiaUnrefQueue()]() mutable {
         InitCodecAndInvokeCodecCallback(std::move(ui_task_runner), context,
-                                        std::move(queue), std::move(callback),
+                                        std::move(queue), callback,
                                         std::move(buffer),
                                         std::move(image_info), trace_id);
       }));
@@ -326,24 +272,15 @@ bool copy_to(SkBitmap* dst, SkColorType dstColorType, const SkBitmap& src) {
 }
 
 void InvokeNextFrameCallback(fml::RefPtr<FrameInfo> frameInfo,
-                             std::unique_ptr<DartPersistentValue> callback,
+                             void (*callback)(fml::RefPtr<FrameInfo> frameIsssnfo),
                              size_t trace_id) {
-  std::shared_ptr<tonic::DartState> dart_state = callback->dart_state().lock();
-  if (!dart_state) {
-    TRACE_FLOW_END("flutter", kCodecNextFrameTraceTag, trace_id);
-    return;
-  }
-  tonic::DartState::Scope scope(dart_state);
-  if (!frameInfo) {
-    DartInvoke(callback->value(), {Dart_Null()});
-  } else {
-    DartInvoke(callback->value(), {ToDart(frameInfo)});
-  }
+
+  (*callback)(frameInfo);
   TRACE_FLOW_END("flutter", kCodecNextFrameTraceTag, trace_id);
 }
 
 }  // namespace
-
+/*
 IMPLEMENT_WRAPPERTYPEINFO(ui, Codec);
 
 #define FOR_EACH_BINDING(V) \
@@ -353,9 +290,9 @@ IMPLEMENT_WRAPPERTYPEINFO(ui, Codec);
   V(Codec, dispose)
 
 FOR_EACH_BINDING(DART_NATIVE_CALLBACK)
-
+*/
 void Codec::dispose() {
-  ClearDartWrapper();
+  //ClearDartWrapper();
 }
 
 MultiFrameCodec::MultiFrameCodec(std::unique_ptr<SkCodec> codec)
@@ -415,7 +352,7 @@ sk_sp<SkImage> MultiFrameCodec::GetNextFrameImage(
 }
 
 void MultiFrameCodec::GetNextFrameAndInvokeCallback(
-    std::unique_ptr<DartPersistentValue> callback,
+    void (*callback)(fml::RefPtr<FrameInfo> frameInfo),
     fml::RefPtr<fml::TaskRunner> ui_task_runner,
     fml::WeakPtr<GrContext> resourceContext,
     fml::RefPtr<flow::SkiaUnrefQueue> unref_queue,
@@ -431,21 +368,21 @@ void MultiFrameCodec::GetNextFrameAndInvokeCallback(
   nextFrameIndex_ = (nextFrameIndex_ + 1) % frameInfos_.size();
 
   ui_task_runner->PostTask(fml::MakeCopyable(
-      [callback = std::move(callback), frameInfo, trace_id]() mutable {
-        InvokeNextFrameCallback(frameInfo, std::move(callback), trace_id);
+      [callback = callback, frameInfo, trace_id]() mutable {
+        InvokeNextFrameCallback(frameInfo, callback, trace_id);
       }));
 
   TRACE_FLOW_END("flutter", kCodecNextFrameTraceTag, trace_id);
 }
 
-Dart_Handle MultiFrameCodec::getNextFrame(Dart_Handle callback_handle) {
+char* MultiFrameCodec::getNextFrame(void (*callback)(fml::RefPtr<FrameInfo> frameInfo)) {
   static size_t trace_counter = 1;
   const size_t trace_id = trace_counter++;
   TRACE_FLOW_BEGIN("flutter", kCodecNextFrameTraceTag, trace_id);
 
-  if (!Dart_IsClosure(callback_handle)) {
+  if (callback == nullptr) {
     TRACE_FLOW_END("flutter", kCodecNextFrameTraceTag, trace_id);
-    return ToDart("Callback must be a function");
+    return "Callback is null";
   }
 
   auto dart_state = UIDartState::Current();
@@ -453,8 +390,7 @@ Dart_Handle MultiFrameCodec::getNextFrame(Dart_Handle callback_handle) {
   const auto& task_runners = dart_state->GetTaskRunners();
 
   task_runners.GetIOTaskRunner()->PostTask(fml::MakeCopyable(
-      [callback = std::make_unique<DartPersistentValue>(
-           tonic::DartState::Current(), callback_handle),
+      [callback = callback,
        this, trace_id, ui_task_runner = task_runners.GetUITaskRunner(),
        queue = UIDartState::Current()->GetSkiaUnrefQueue(),
        context = dart_state->GetResourceContext()]() mutable {
@@ -463,31 +399,23 @@ Dart_Handle MultiFrameCodec::getNextFrame(Dart_Handle callback_handle) {
                                       std::move(queue), trace_id);
       }));
 
-  return Dart_Null();
+  return nullptr;
 }
 
-Dart_Handle SingleFrameCodec::getNextFrame(Dart_Handle callback_handle) {
-  if (!Dart_IsClosure(callback_handle)) {
-    return ToDart("Callback must be a function");
+char* SingleFrameCodec::getNextFrame(void (*callback)(fml::RefPtr<FrameInfo> frameInfo)) {
+  if (callback == nullptr) {
+    return "Callback is null";
   }
 
-  auto callback = std::make_unique<DartPersistentValue>(
-      tonic::DartState::Current(), callback_handle);
-  std::shared_ptr<tonic::DartState> dart_state = callback->dart_state().lock();
-  if (!dart_state) {
-    return ToDart("Invalid dart state");
-  }
-
-  tonic::DartState::Scope scope(dart_state);
-  DartInvoke(callback->value(), {ToDart(frame_)});
-  return Dart_Null();
+  (*callback) (frame_);
+  return nullptr;
 }
-
+/*
 void Codec::RegisterNatives(tonic::DartLibraryNatives* natives) {
   natives->Register({
       {"instantiateImageCodec", InstantiateImageCodec, 3, true},
   });
   natives->Register({FOR_EACH_BINDING(DART_REGISTER_NATIVE)});
 }
-
+*/
 }  // namespace blink

@@ -6,24 +6,17 @@
 #define FLUTTER_LIB_UI_PAINTING_PATH_H_
 
 #include "flutter/lib/ui/dart_wrapper.h"
-#include "flutter/lib/ui/painting/rrect.h"
 #include "third_party/skia/include/core/SkPath.h"
 #include "third_party/skia/include/pathops/SkPathOps.h"
-#include "third_party/tonic/typed_data/float32_list.h"
-#include "third_party/tonic/typed_data/float64_list.h"
-
-namespace tonic {
-class DartLibraryNatives;
-}  // namespace tonic
 
 namespace blink {
 
 class CanvasPath : public RefCountedDartWrappable<CanvasPath> {
-  DEFINE_WRAPPERTYPEINFO();
+
   FML_FRIEND_MAKE_REF_COUNTED(CanvasPath);
 
  public:
-  ~CanvasPath() override;
+  ~CanvasPath();
   static fml::RefPtr<CanvasPath> Create() {
     return fml::MakeRefCounted<CanvasPath>();
   }
@@ -81,30 +74,28 @@ class CanvasPath : public RefCountedDartWrappable<CanvasPath> {
               float bottom,
               float startAngle,
               float sweepAngle);
-  void addPolygon(const tonic::Float32List& points, bool close);
-  void addRRect(const RRect& rrect);
-  void addPath(CanvasPath* path, double dx, double dy);
-  void addPathWithMatrix(CanvasPath* path,
+  void addPolygon(const SkPoint* points, int count, bool close);
+  void addRRect(const SkRRect& rrect);
+  char* addPath(CanvasPath* path, double dx, double dy);
+  char* addPathWithMatrix(CanvasPath* path,
                          double dx,
                          double dy,
-                         tonic::Float64List& matrix4);
-  void extendWithPath(CanvasPath* path, double dx, double dy);
-  void extendWithPathAndMatrix(CanvasPath* path,
+                         const SkMatrix& matrix);
+  char* extendWithPath(CanvasPath* path, double dx, double dy);
+  char* extendWithPathAndMatrix(CanvasPath* path,
                                double dx,
                                double dy,
-                               tonic::Float64List& matrix4);
+                               const SkMatrix& matrix);
   void close();
   void reset();
   bool contains(double x, double y);
   fml::RefPtr<CanvasPath> shift(double dx, double dy);
-  fml::RefPtr<CanvasPath> transform(tonic::Float64List& matrix4);
-  tonic::Float32List getBounds();
+  fml::RefPtr<CanvasPath> transform(const SkMatrix& matrix);
+  SkRect getBounds();
   bool op(CanvasPath* path1, CanvasPath* path2, int operation);
   fml::RefPtr<CanvasPath> clone();
 
   const SkPath& path() const { return path_; }
-
-  static void RegisterNatives(tonic::DartLibraryNatives* natives);
 
  private:
   CanvasPath();

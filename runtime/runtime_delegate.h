@@ -13,7 +13,6 @@
 #include "flutter/lib/ui/semantics/semantics_node.h"
 #include "flutter/lib/ui/text/font_collection.h"
 #include "flutter/lib/ui/window/platform_message.h"
-#include "third_party/dart/runtime/include/dart_api.h"
 
 namespace blink {
 

@@ -284,7 +284,6 @@ FlutterResult FlutterEngineRun(size_t version,
     settings.application_kernel_asset = kApplicationKernelSnapshotFileName;
   } else {
     // Run from a main Dart file.
-    settings.main_dart_file_path = args->main_path;
     settings.packages_file_path = args->packages_path;
   }
 

@@ -35,9 +35,9 @@ class ParagraphImpl {
   virtual std::vector<TextBox> getRectsForRange(unsigned start,
                                                 unsigned end) = 0;
 
-  virtual Dart_Handle getPositionForOffset(double dx, double dy) = 0;
+  virtual txt::Paragraph::PositionWithAffinity getPositionForOffset(double dx, double dy) = 0;
 
-  virtual Dart_Handle getWordBoundary(unsigned offset) = 0;
+  virtual txt::Paragraph::Range<size_t> getWordBoundary(unsigned offset) = 0;
 };
 
 }  // namespace blink

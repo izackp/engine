@@ -6,13 +6,11 @@
 #define FLUTTER_LIB_UI_DART_WRAPPER_H_
 
 #include "flutter/fml/memory/ref_counted.h"
-#include "third_party/tonic/dart_wrappable.h"
 
 namespace blink {
 
 template <typename T>
-class RefCountedDartWrappable : public fml::RefCountedThreadSafe<T>,
-                                public tonic::DartWrappable {
+class RefCountedDartWrappable : public fml::RefCountedThreadSafe<T> {
  public:
   virtual void RetainDartWrappableReference() const override {
     fml::RefCountedThreadSafe<T>::AddRef();

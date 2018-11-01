@@ -5,15 +5,9 @@
 #include "flutter/lib/ui/painting/image_shader.h"
 
 #include "flutter/lib/ui/ui_dart_state.h"
-#include "third_party/tonic/converter/dart_converter.h"
-#include "third_party/tonic/dart_args.h"
-#include "third_party/tonic/dart_binding_macros.h"
-#include "third_party/tonic/dart_library_natives.h"
-
-using tonic::ToDart;
 
 namespace blink {
-
+/*
 static void ImageShader_constructor(Dart_NativeArguments args) {
   DartCallConstructor(&ImageShader::Create, args);
 }
@@ -28,23 +22,21 @@ void ImageShader::RegisterNatives(tonic::DartLibraryNatives* natives) {
   natives->Register(
       {{"ImageShader_constructor", ImageShader_constructor, 1, true},
        FOR_EACH_BINDING(DART_REGISTER_NATIVE)});
-}
+}*/
 
 fml::RefPtr<ImageShader> ImageShader::Create() {
   return fml::MakeRefCounted<ImageShader>();
 }
 
-void ImageShader::initWithImage(CanvasImage* image,
+char* ImageShader::initWithImage(CanvasImage* image,
                                 SkShader::TileMode tmx,
                                 SkShader::TileMode tmy,
-                                const tonic::Float64List& matrix4) {
+                                const SkMatrix& matrix) {
   if (!image) {
-    Dart_ThrowException(
-        ToDart("ImageShader constructor called with non-genuine Image."));
+    return "ImageShader constructor called with non-genuine Image.";
   }
-  SkMatrix sk_matrix = ToSkMatrix(matrix4);
   set_shader(UIDartState::CreateGPUObject(
-      image->image()->makeShader(tmx, tmy, &sk_matrix)));
+      image->image()->makeShader(tmx, tmy, &matrix)));
 }
 
 ImageShader::ImageShader() = default;

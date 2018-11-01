@@ -49,16 +49,6 @@ class Shell final : public PlatformView::Delegate,
       CreateCallback<PlatformView> on_create_platform_view,
       CreateCallback<Rasterizer> on_create_rasterizer);
 
-  // Creates a shell with the given task runners and settings. The isolate
-  // snapshot is specified upfront.
-  static std::unique_ptr<Shell> Create(
-      blink::TaskRunners task_runners,
-      blink::Settings settings,
-      fml::RefPtr<blink::DartSnapshot> isolate_snapshot,
-      fml::RefPtr<blink::DartSnapshot> shared_snapshot,
-      CreateCallback<PlatformView> on_create_platform_view,
-      CreateCallback<Rasterizer> on_create_rasterizer);
-
   ~Shell();
 
   const blink::Settings& GetSettings() const;
@@ -70,8 +60,6 @@ class Shell final : public PlatformView::Delegate,
   fml::WeakPtr<Engine> GetEngine();
 
   fml::WeakPtr<PlatformView> GetPlatformView();
-
-  blink::DartVM& GetDartVM() const;
 
   bool IsSetup() const;
 
@@ -85,7 +73,6 @@ class Shell final : public PlatformView::Delegate,
 
   const blink::TaskRunners task_runners_;
   const blink::Settings settings_;
-  fml::RefPtr<blink::DartVM> vm_;
   std::unique_ptr<PlatformView> platform_view_;  // on platform task runner
   std::unique_ptr<Engine> engine_;               // on UI task runner
   std::unique_ptr<Rasterizer> rasterizer_;       // on GPU task runner
@@ -104,8 +91,6 @@ class Shell final : public PlatformView::Delegate,
   static std::unique_ptr<Shell> CreateShellOnPlatformThread(
       blink::TaskRunners task_runners,
       blink::Settings settings,
-      fml::RefPtr<blink::DartSnapshot> isolate_snapshot,
-      fml::RefPtr<blink::DartSnapshot> shared_snapshot,
       Shell::CreateCallback<PlatformView> on_create_platform_view,
       Shell::CreateCallback<Rasterizer> on_create_rasterizer);
 

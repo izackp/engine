@@ -9,22 +9,16 @@
 #include "flutter/lib/ui/painting/image.h"
 #include "third_party/skia/include/core/SkImageInfo.h"
 #include "third_party/skia/include/core/SkSurface.h"
-#include "third_party/tonic/converter/dart_converter.h"
-#include "third_party/tonic/dart_args.h"
-#include "third_party/tonic/dart_binding_macros.h"
-#include "third_party/tonic/dart_library_natives.h"
-#include "third_party/tonic/dart_persistent_value.h"
-#include "third_party/tonic/logging/dart_invoke.h"
 
 namespace blink {
-
+/*
 IMPLEMENT_WRAPPERTYPEINFO(ui, Scene);
 
 #define FOR_EACH_BINDING(V) \
   V(Scene, toImage)         \
   V(Scene, dispose)
 
-DART_BIND_ALL(Scene, FOR_EACH_BINDING)
+DART_BIND_ALL(Scene, FOR_EACH_BINDING)*/
 
 fml::RefPtr<Scene> Scene::create(std::unique_ptr<flow::Layer> rootLayer,
                                  uint32_t rasterizerTracingThreshold,
@@ -50,7 +44,6 @@ Scene::Scene(std::unique_ptr<flow::Layer> rootLayer,
 Scene::~Scene() {}
 
 void Scene::dispose() {
-  ClearDartWrapper();
 }
 
 static sk_sp<SkImage> CreateSceneSnapshot(GrContext* context,
@@ -93,26 +86,23 @@ static sk_sp<SkImage> CreateSceneSnapshot(GrContext* context,
   return snapshot->makeRasterImage();
 }
 
-Dart_Handle Scene::toImage(uint32_t width,
+char* Scene::toImage(uint32_t width,
                            uint32_t height,
-                           Dart_Handle raw_image_callback) {
+                           ImageCallback raw_image_callback) {
   TRACE_EVENT0("flutter", "Scene::toImage");
-  if (Dart_IsNull(raw_image_callback) || !Dart_IsClosure(raw_image_callback)) {
-    return tonic::ToDart("Image callback was invalid");
+  if (raw_image_callback == 0) {
+    return "Image callback was invalid";
   }
 
   if (!m_layerTree) {
-    return tonic::ToDart("Scene did not contain a layer tree.");
+    return "Scene did not contain a layer tree.";
   }
 
   if (width == 0 || height == 0) {
-    return tonic::ToDart("Image dimensions for scene were invalid.");
+    return "Image dimensions for scene were invalid.";
   }
 
   auto dart_state = UIDartState::Current();
-
-  auto image_callback = std::make_unique<tonic::DartPersistentValue>(
-      dart_state, raw_image_callback);
 
   // We can't create an image on this task runner because we don't have a
   // graphics context. Even if we did, it would be slow anyway. Also, this
@@ -123,7 +113,7 @@ Dart_Handle Scene::toImage(uint32_t width,
   auto picture = m_layerTree->Flatten(SkRect::MakeSize(bounds_size));
   if (!picture) {
     // Already in Dart scope.
-    return tonic::ToDart("Could not flatten scene into a layer tree.");
+    return "Could not flatten scene into a layer tree.";
   }
 
   auto resource_context = dart_state->GetResourceContext();
@@ -136,7 +126,7 @@ Dart_Handle Scene::toImage(uint32_t width,
                          bounds_size,                                     //
                          resource_context = std::move(resource_context),  //
                          ui_task_runner = std::move(ui_task_runner),      //
-                         image_callback = std::move(image_callback),      //
+                         image_callback = std::move(raw_image_callback),  //
                          unref_queue = std::move(unref_queue)             //
   ]() mutable {
         // Snapshot the picture on the IO thread that contains an optional
@@ -150,29 +140,27 @@ Dart_Handle Scene::toImage(uint32_t width,
             fml::MakeCopyable([image = std::move(image),                    //
                                image_callback = std::move(image_callback),  //
                                unref_queue = std::move(unref_queue)         //
-        ]() mutable {
+        ]() mutable {/*
               auto dart_state = image_callback->dart_state().lock();
               if (!dart_state) {
                 // The root isolate could have died in the meantime.
                 return;
               }
-              tonic::DartState::Scope scope(dart_state);
+              tonic::DartState::Scope scope(dart_state);*/
+
 
               if (!image) {
-                tonic::DartInvoke(image_callback->Get(), {Dart_Null()});
+                image_callback(nullptr);
                 return;
               }
 
               auto dart_image = CanvasImage::Create();
               dart_image->set_image({std::move(image), std::move(unref_queue)});
-              auto raw_dart_image = tonic::ToDart(std::move(dart_image));
-
-              // All done!
-              tonic::DartInvoke(image_callback->Get(), {raw_dart_image});
+              image_callback(dart_image);
             }));
       }));
 
-  return Dart_Null();
+  return nullptr;
 }
 
 std::unique_ptr<flow::LayerTree> Scene::takeLayerTree() {

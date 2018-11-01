@@ -6,20 +6,14 @@
 
 #include <memory>
 
-#include "flutter/lib/ui/painting/matrix.h"
-#include "third_party/tonic/converter/dart_converter.h"
-#include "third_party/tonic/dart_args.h"
-#include "third_party/tonic/dart_binding_macros.h"
-#include "third_party/tonic/dart_library_natives.h"
-
 namespace blink {
-
+/*
 IMPLEMENT_WRAPPERTYPEINFO(ui, SemanticsUpdate);
 
 #define FOR_EACH_BINDING(V) V(SemanticsUpdate, dispose)
 
 DART_BIND_ALL(SemanticsUpdate, FOR_EACH_BINDING)
-
+*/
 fml::RefPtr<SemanticsUpdate> SemanticsUpdate::create(
     SemanticsNodeUpdates nodes,
     CustomAccessibilityActionUpdates actions) {
@@ -39,10 +33,6 @@ SemanticsNodeUpdates SemanticsUpdate::takeNodes() {
 
 CustomAccessibilityActionUpdates SemanticsUpdate::takeActions() {
   return std::move(actions_);
-}
-
-void SemanticsUpdate::dispose() {
-  ClearDartWrapper();
 }
 
 }  // namespace blink

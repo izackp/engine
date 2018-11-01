@@ -4,16 +4,10 @@
 
 #include "flutter/lib/ui/painting/image.h"
 
-#include "flutter/lib/ui/painting/image_encoding.h"
-#include "third_party/tonic/converter/dart_converter.h"
-#include "third_party/tonic/dart_args.h"
-#include "third_party/tonic/dart_binding_macros.h"
-#include "third_party/tonic/dart_library_natives.h"
-
 namespace blink {
 
 typedef CanvasImage Image;
-
+/*
 IMPLEMENT_WRAPPERTYPEINFO(ui, Image);
 
 #define FOR_EACH_BINDING(V) \
@@ -26,18 +20,17 @@ FOR_EACH_BINDING(DART_NATIVE_CALLBACK)
 
 void CanvasImage::RegisterNatives(tonic::DartLibraryNatives* natives) {
   natives->Register({FOR_EACH_BINDING(DART_REGISTER_NATIVE)});
-}
+}*/
 
 CanvasImage::CanvasImage() = default;
 
 CanvasImage::~CanvasImage() = default;
 
-Dart_Handle CanvasImage::toByteData(int format, Dart_Handle callback) {
+char* CanvasImage::toByteData(ImageByteFormat format, void (*callback)(sk_sp<SkData>)) {
   return EncodeImage(this, format, callback);
 }
 
 void CanvasImage::dispose() {
-  ClearDartWrapper();
 }
 
 size_t CanvasImage::GetAllocationSize() {

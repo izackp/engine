@@ -30,8 +30,8 @@ class ParagraphImplTxt : public ParagraphImpl {
   void paint(Canvas* canvas, double x, double y) override;
 
   std::vector<TextBox> getRectsForRange(unsigned start, unsigned end) override;
-  Dart_Handle getPositionForOffset(double dx, double dy) override;
-  Dart_Handle getWordBoundary(unsigned offset) override;
+  txt::Paragraph::PositionWithAffinity getPositionForOffset(double dx, double dy) override;
+  txt::Paragraph::Range<size_t> getWordBoundary(unsigned offset) override;
 
  private:
   std::unique_ptr<txt::Paragraph> m_paragraph;

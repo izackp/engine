@@ -13,7 +13,6 @@
 namespace blink {
 
 class Shader : public RefCountedDartWrappable<Shader> {
-  DEFINE_WRAPPERTYPEINFO();
   FML_FRIEND_MAKE_REF_COUNTED(Shader);
 
  public:

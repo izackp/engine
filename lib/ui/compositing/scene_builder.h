@@ -15,14 +15,11 @@
 #include "flutter/lib/ui/painting/image_filter.h"
 #include "flutter/lib/ui/painting/path.h"
 #include "flutter/lib/ui/painting/picture.h"
-#include "flutter/lib/ui/painting/rrect.h"
 #include "flutter/lib/ui/painting/shader.h"
-#include "third_party/tonic/typed_data/float64_list.h"
 
 namespace blink {
 
 class SceneBuilder : public RefCountedDartWrappable<SceneBuilder> {
-  DEFINE_WRAPPERTYPEINFO();
   FML_FRIEND_MAKE_REF_COUNTED(SceneBuilder);
 
  public:
@@ -30,15 +27,15 @@ class SceneBuilder : public RefCountedDartWrappable<SceneBuilder> {
     return fml::MakeRefCounted<SceneBuilder>();
   }
 
-  ~SceneBuilder() override;
+  ~SceneBuilder();
 
-  void pushTransform(const tonic::Float64List& matrix4);
+  void pushTransform(const SkMatrix& sk_matrix);
   void pushClipRect(double left,
                     double right,
                     double top,
                     double bottom,
                     int clipBehavior);
-  void pushClipRRect(const RRect& rrect, int clipBehavior);
+  void pushClipRRect(const SkRRect& rrect, int clipBehavior);
   void pushClipPath(const CanvasPath* path, int clipBehavior);
   void pushOpacity(int alpha);
   void pushColorFilter(int color, int blendMode);
@@ -85,8 +82,6 @@ class SceneBuilder : public RefCountedDartWrappable<SceneBuilder> {
   void setCheckerboardOffscreenLayers(bool checkerboard);
 
   fml::RefPtr<Scene> build();
-
-  static void RegisterNatives(tonic::DartLibraryNatives* natives);
 
  private:
   SceneBuilder();

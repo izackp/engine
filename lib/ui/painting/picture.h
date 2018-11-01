@@ -10,28 +10,22 @@
 #include "flutter/lib/ui/painting/image.h"
 #include "third_party/skia/include/core/SkPicture.h"
 
-namespace tonic {
-class DartLibraryNatives;
-}  // namespace tonic
-
 namespace blink {
 class Canvas;
 
 class Picture : public RefCountedDartWrappable<Picture> {
-  DEFINE_WRAPPERTYPEINFO();
+
   FML_FRIEND_MAKE_REF_COUNTED(Picture);
 
  public:
-  ~Picture() override;
+  ~Picture();
   static fml::RefPtr<Picture> Create(flow::SkiaGPUObject<SkPicture> picture);
 
   sk_sp<SkPicture> picture() const { return picture_.get(); }
 
   fml::RefPtr<CanvasImage> toImage(int width, int height);
 
-  void dispose();
-
-  virtual size_t GetAllocationSize() override;
+  virtual size_t GetAllocationSize();
 
   static void RegisterNatives(tonic::DartLibraryNatives* natives);
 

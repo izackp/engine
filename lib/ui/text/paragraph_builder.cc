@@ -16,10 +16,6 @@
 #include "flutter/third_party/txt/src/txt/text_decoration.h"
 #include "flutter/third_party/txt/src/txt/text_style.h"
 #include "third_party/icu/source/common/unicode/ustring.h"
-#include "third_party/tonic/converter/dart_converter.h"
-#include "third_party/tonic/dart_args.h"
-#include "third_party/tonic/dart_binding_macros.h"
-#include "third_party/tonic/dart_library_natives.h"
 
 namespace blink {
 namespace {
@@ -32,14 +28,14 @@ const int tsTextDecorationColorIndex = 3;
 const int tsTextDecorationStyleIndex = 4;
 const int tsFontWeightIndex = 5;
 const int tsFontStyleIndex = 6;
-const int tsTextBaselineIndex = 7;
+const int tsTextBaselineIndex = 7; 
 const int tsFontFamilyIndex = 8;
 const int tsFontSizeIndex = 9;
 const int tsLetterSpacingIndex = 10;
 const int tsWordSpacingIndex = 11;
 const int tsHeightIndex = 12;
 const int tsLocaleIndex = 13;
-const int tsBackgroundIndex = 14;
+const int tsBackgroundIndex = 14; 
 const int tsForegroundIndex = 15;
 
 const int tsColorMask = 1 << tsColorIndex;
@@ -83,7 +79,7 @@ const int psEllipsisMask = 1 << psEllipsisIndex;
 const int psLocaleMask = 1 << psLocaleIndex;
 
 }  // namespace
-
+/*
 static void ParagraphBuilder_constructor(Dart_NativeArguments args) {
   DartCallConstructor(&ParagraphBuilder::create, args);
 }
@@ -102,60 +98,13 @@ void ParagraphBuilder::RegisterNatives(tonic::DartLibraryNatives* natives) {
   natives->Register(
       {{"ParagraphBuilder_constructor", ParagraphBuilder_constructor, 7, true},
        FOR_EACH_BINDING(DART_REGISTER_NATIVE)});
+}*/
+
+fml::RefPtr<ParagraphBuilder> ParagraphBuilder::create(const txt::TextStyle& style) {
+  return fml::MakeRefCounted<ParagraphBuilder>(style);
 }
 
-fml::RefPtr<ParagraphBuilder> ParagraphBuilder::create(
-    tonic::Int32List& encoded,
-    const std::string& fontFamily,
-    double fontSize,
-    double lineHeight,
-    const std::u16string& ellipsis,
-    const std::string& locale) {
-  return fml::MakeRefCounted<ParagraphBuilder>(encoded, fontFamily, fontSize,
-                                               lineHeight, ellipsis, locale);
-}
-
-ParagraphBuilder::ParagraphBuilder(tonic::Int32List& encoded,
-                                   const std::string& fontFamily,
-                                   double fontSize,
-                                   double lineHeight,
-                                   const std::u16string& ellipsis,
-                                   const std::string& locale) {
-  int32_t mask = encoded[0];
-  txt::ParagraphStyle style;
-  if (mask & psTextAlignMask)
-    style.text_align = txt::TextAlign(encoded[psTextAlignIndex]);
-
-  if (mask & psTextDirectionMask)
-    style.text_direction = txt::TextDirection(encoded[psTextDirectionIndex]);
-
-  if (mask & psFontWeightMask)
-    style.font_weight =
-        static_cast<txt::FontWeight>(encoded[psFontWeightIndex]);
-
-  if (mask & psFontStyleMask)
-    style.font_style = static_cast<txt::FontStyle>(encoded[psFontStyleIndex]);
-
-  if (mask & psFontFamilyMask)
-    style.font_family = fontFamily;
-
-  if (mask & psFontSizeMask)
-    style.font_size = fontSize;
-
-  if (mask & psLineHeightMask)
-    style.line_height = lineHeight;
-
-  if (mask & psMaxLinesMask)
-    style.max_lines = encoded[psMaxLinesIndex];
-
-  if (mask & psEllipsisMask) {
-    style.ellipsis = ellipsis;
-  }
-
-  if (mask & psLocaleMask) {
-    style.locale = locale;
-  }
-
+ParagraphBuilder::ParagraphBuilder(const txt::TextStyle& style) {
   FontCollection& font_collection =
       UIDartState::Current()->window()->client()->GetFontCollection();
   m_paragraphBuilder = std::make_unique<txt::ParagraphBuilder>(
@@ -164,90 +113,11 @@ ParagraphBuilder::ParagraphBuilder(tonic::Int32List& encoded,
 
 ParagraphBuilder::~ParagraphBuilder() = default;
 
-void ParagraphBuilder::pushStyle(tonic::Int32List& encoded,
-                                 const std::string& fontFamily,
-                                 double fontSize,
-                                 double letterSpacing,
-                                 double wordSpacing,
-                                 double height,
-                                 const std::string& locale,
-                                 Dart_Handle background_objects,
-                                 Dart_Handle background_data,
-                                 Dart_Handle foreground_objects,
-                                 Dart_Handle foreground_data) {
-  FML_DCHECK(encoded.num_elements() == 8);
-
-  int32_t mask = encoded[0];
-
+void ParagraphBuilder::pushStyle(const txt::TextStyle& style) {
   // Set to use the properties of the previous style if the property is not
   // explicitly given.
-  txt::TextStyle style = m_paragraphBuilder->PeekStyle();
-
-  if (mask & tsColorMask)
-    style.color = encoded[tsColorIndex];
-
-  if (mask & tsTextDecorationMask) {
-    style.decoration =
-        static_cast<txt::TextDecoration>(encoded[tsTextDecorationIndex]);
-  }
-
-  if (mask & tsTextDecorationColorMask)
-    style.decoration_color = encoded[tsTextDecorationColorIndex];
-
-  if (mask & tsTextDecorationStyleMask)
-    style.decoration_style = static_cast<txt::TextDecorationStyle>(
-        encoded[tsTextDecorationStyleIndex]);
-
-  if (mask & tsTextBaselineMask) {
-    // TODO(abarth): Implement TextBaseline. The CSS version of this
-    // property wasn't wired up either.
-  }
-
-  if (mask & (tsFontWeightMask | tsFontStyleMask | tsFontFamilyMask |
-              tsFontSizeMask | tsLetterSpacingMask | tsWordSpacingMask)) {
-    if (mask & tsFontWeightMask)
-      style.font_weight =
-          static_cast<txt::FontWeight>(encoded[tsFontWeightIndex]);
-
-    if (mask & tsFontStyleMask)
-      style.font_style = static_cast<txt::FontStyle>(encoded[tsFontStyleIndex]);
-
-    if (mask & tsFontFamilyMask)
-      style.font_family = fontFamily;
-
-    if (mask & tsFontSizeMask)
-      style.font_size = fontSize;
-
-    if (mask & tsLetterSpacingMask)
-      style.letter_spacing = letterSpacing;
-
-    if (mask & tsWordSpacingMask)
-      style.word_spacing = wordSpacing;
-  }
-
-  if (mask & tsHeightMask) {
-    style.height = height;
-  }
-
-  if (mask & tsLocaleMask) {
-    style.locale = locale;
-  }
-
-  if (mask & tsBackgroundMask) {
-    Paint background(background_objects, background_data);
-    if (background.paint()) {
-      style.has_background = true;
-      style.background = *background.paint();
-    }
-  }
-
-  if (mask & tsForegroundMask) {
-    Paint foreground(foreground_objects, foreground_data);
-    if (foreground.paint()) {
-      style.has_foreground = true;
-      style.foreground = *foreground.paint();
-    }
-  }
+  //txt::TextStyle style = m_paragraphBuilder->PeekStyle();
+  //TODO: Merge with previous style
 
   m_paragraphBuilder->PushStyle(style);
 }
@@ -256,9 +126,9 @@ void ParagraphBuilder::pop() {
   m_paragraphBuilder->Pop();
 }
 
-Dart_Handle ParagraphBuilder::addText(const std::u16string& text) {
+char* ParagraphBuilder::addText(const std::u16string& text) {
   if (text.empty())
-    return Dart_Null();
+    return nullptr;
 
   // Use ICU to validate the UTF-16 input.  Calling u_strToUTF8 with a null
   // output buffer will return U_BUFFER_OVERFLOW_ERROR if the input is well
@@ -267,11 +137,11 @@ Dart_Handle ParagraphBuilder::addText(const std::u16string& text) {
   UErrorCode error_code = U_ZERO_ERROR;
   u_strToUTF8(nullptr, 0, nullptr, text_ptr, text.size(), &error_code);
   if (error_code != U_BUFFER_OVERFLOW_ERROR)
-    return tonic::ToDart("string is not well-formed UTF-16");
+    return "string is not well-formed UTF-16";
 
   m_paragraphBuilder->AddText(text);
 
-  return Dart_Null();
+  return nullptr;
 }
 
 fml::RefPtr<Paragraph> ParagraphBuilder::build() {

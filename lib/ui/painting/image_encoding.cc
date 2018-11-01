@@ -17,13 +17,6 @@
 #include "third_party/skia/include/core/SkEncodedImageFormat.h"
 #include "third_party/skia/include/core/SkImage.h"
 #include "third_party/skia/include/core/SkSurface.h"
-#include "third_party/tonic/dart_persistent_value.h"
-#include "third_party/tonic/logging/dart_invoke.h"
-#include "third_party/tonic/typed_data/uint8_list.h"
-
-using tonic::DartInvoke;
-using tonic::DartPersistentValue;
-using tonic::ToDart;
 
 #ifdef ERROR
 #undef ERROR
@@ -31,29 +24,6 @@ using tonic::ToDart;
 
 namespace blink {
 namespace {
-
-// This must be kept in sync with the enum in painting.dart
-enum ImageByteFormat {
-  kRawRGBA,
-  kRawUnmodified,
-  kPNG,
-};
-
-void InvokeDataCallback(std::unique_ptr<DartPersistentValue> callback,
-                        sk_sp<SkData> buffer) {
-  std::shared_ptr<tonic::DartState> dart_state = callback->dart_state().lock();
-  if (!dart_state) {
-    return;
-  }
-  tonic::DartState::Scope scope(dart_state);
-  if (!buffer) {
-    DartInvoke(callback->value(), {Dart_Null()});
-  } else {
-    Dart_Handle dart_data = tonic::DartConverter<tonic::Uint8List>::ToDart(
-        buffer->bytes(), buffer->size());
-    DartInvoke(callback->value(), {dart_data});
-  }
-}
 
 sk_sp<SkImage> ConvertToRasterImageIfNecessary(sk_sp<SkImage> image,
                                                GrContext* context) {
@@ -185,7 +155,7 @@ sk_sp<SkData> EncodeImage(sk_sp<SkImage> p_image,
 }
 
 void EncodeImageAndInvokeDataCallback(
-    std::unique_ptr<DartPersistentValue> callback,
+    void (*callback)(sk_sp<SkData>),
     sk_sp<SkImage> image,
     GrContext* context,
     fml::RefPtr<fml::TaskRunner> ui_task_runner,
@@ -193,38 +163,33 @@ void EncodeImageAndInvokeDataCallback(
   sk_sp<SkData> encoded = EncodeImage(std::move(image), context, format);
 
   ui_task_runner->PostTask(
-      fml::MakeCopyable([callback = std::move(callback), encoded]() mutable {
-        InvokeDataCallback(std::move(callback), std::move(encoded));
+      fml::MakeCopyable([callback = callback, encoded]() mutable {
+        (*callback)(std::move(encoded));
       }));
 }
 
 }  // namespace
 
-Dart_Handle EncodeImage(CanvasImage* canvas_image,
-                        int format,
-                        Dart_Handle callback_handle) {
+char* EncodeImage(CanvasImage* canvas_image,
+                        ImageByteFormat image_format,
+                        void (*callback)(sk_sp<SkData>)) {
   if (!canvas_image)
-    return ToDart("encode called with non-genuine Image.");
+    return "Encode called with null Image.";
 
-  if (!Dart_IsClosure(callback_handle))
-    return ToDart("Callback must be a function.");
-
-  ImageByteFormat image_format = static_cast<ImageByteFormat>(format);
-
-  auto callback = std::make_unique<DartPersistentValue>(
-      tonic::DartState::Current(), callback_handle);
+  if (!callback)
+    return "Callback must not be null.";
 
   const auto& task_runners = UIDartState::Current()->GetTaskRunners();
   auto context = UIDartState::Current()->GetResourceContext();
 
   task_runners.GetIOTaskRunner()->PostTask(
-      fml::MakeCopyable([callback = std::move(callback),                   //
+      fml::MakeCopyable([callback = callback,                   //
                          image = canvas_image->image(),                    //
                          context = std::move(context),                     //
                          ui_task_runner = task_runners.GetUITaskRunner(),  //
                          image_format                                      //
   ]() mutable {
-        EncodeImageAndInvokeDataCallback(std::move(callback),        //
+        EncodeImageAndInvokeDataCallback(callback,        //
                                          std::move(image),           //
                                          context.get(),              //
                                          std::move(ui_task_runner),  //
@@ -232,7 +197,7 @@ Dart_Handle EncodeImage(CanvasImage* canvas_image,
         );
       }));
 
-  return Dart_Null();
+  return nullptr;
 }
 
 }  // namespace blink

@@ -139,16 +139,11 @@ blink::Settings SettingsFromCommandLine(const fml::CommandLine& command_line) {
   }
 
   // Checked mode overrides.
-  settings.dart_non_checked_mode =
-      command_line.HasOption(FlagForSwitch(Switch::DartNonCheckedMode));
 
   settings.ipv6 = command_line.HasOption(FlagForSwitch(Switch::IPv6));
 
   settings.start_paused =
       command_line.HasOption(FlagForSwitch(Switch::StartPaused));
-
-  settings.enable_dart_profiling =
-      command_line.HasOption(FlagForSwitch(Switch::EnableDartProfiling));
 
   settings.enable_software_rendering =
       command_line.HasOption(FlagForSwitch(Switch::EnableSoftwareRendering));
@@ -169,9 +164,6 @@ blink::Settings SettingsFromCommandLine(const fml::CommandLine& command_line) {
 
   command_line.GetOptionValue(FlagForSwitch(Switch::FlutterAssetsDir),
                               &settings.assets_path);
-
-  command_line.GetOptionValue(FlagForSwitch(Switch::MainDartFile),
-                              &settings.main_dart_file_path);
 
   command_line.GetOptionValue(FlagForSwitch(Switch::Packages),
                               &settings.packages_file_path);
@@ -224,14 +216,6 @@ blink::Settings SettingsFromCommandLine(const fml::CommandLine& command_line) {
       command_line.HasOption(FlagForSwitch(Switch::UseTestFonts));
 
   command_line.GetOptionValue(FlagForSwitch(Switch::LogTag), &settings.log_tag);
-  std::string all_dart_flags;
-  if (command_line.GetOptionValue(FlagForSwitch(Switch::DartFlags),
-                                  &all_dart_flags)) {
-    std::stringstream stream(all_dart_flags);
-    std::istream_iterator<std::string> end;
-    for (std::istream_iterator<std::string> it(stream); it != end; ++it)
-      settings.dart_flags.push_back(*it);
-  }
 
 #if FLUTTER_RUNTIME_MODE != FLUTTER_RUNTIME_MODE_RELEASE && \
     FLUTTER_RUNTIME_MODE != FLUTTER_RUNTIME_MODE_DYNAMIC_RELEASE

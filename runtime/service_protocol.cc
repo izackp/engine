@@ -16,7 +16,6 @@
 #include "flutter/fml/synchronization/waitable_event.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
-#include "third_party/dart/runtime/include/dart_tools_api.h"
 
 namespace blink {
 
@@ -62,13 +61,7 @@ void ServiceProtocol::RemoveHandler(Handler* handler) {
 }
 
 void ServiceProtocol::ToggleHooks(bool set) {
-  for (const auto& endpoint : endpoints_) {
-    Dart_RegisterIsolateServiceRequestCallback(
-        endpoint.data(),                  // method
-        &ServiceProtocol::HandleMessage,  // callback
-        set ? this : nullptr              // user data
-    );
-  }
+
 }
 
 static void WriteServerErrorResponse(rapidjson::Document& document,

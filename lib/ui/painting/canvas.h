@@ -6,27 +6,17 @@
 #define FLUTTER_LIB_UI_PAINTING_CANVAS_H_
 
 #include "flutter/lib/ui/dart_wrapper.h"
-#include "flutter/lib/ui/painting/paint.h"
 #include "flutter/lib/ui/painting/path.h"
 #include "flutter/lib/ui/painting/picture.h"
 #include "flutter/lib/ui/painting/picture_recorder.h"
-#include "flutter/lib/ui/painting/rrect.h"
-#include "flutter/lib/ui/painting/vertices.h"
 #include "third_party/skia/include/core/SkCanvas.h"
 #include "third_party/skia/include/utils/SkShadowUtils.h"
-#include "third_party/tonic/typed_data/float32_list.h"
-#include "third_party/tonic/typed_data/float64_list.h"
-#include "third_party/tonic/typed_data/int32_list.h"
-
-namespace tonic {
-class DartLibraryNatives;
-}  // namespace tonic
 
 namespace blink {
 class CanvasImage;
 
 class Canvas : public RefCountedDartWrappable<Canvas> {
-  DEFINE_WRAPPERTYPEINFO();
+  //DEFINE_WRAPPERTYPEINFO();
   FML_FRIEND_MAKE_REF_COUNTED(Canvas);
 
  public:
@@ -34,18 +24,18 @@ class Canvas : public RefCountedDartWrappable<Canvas> {
                                     double left,
                                     double top,
                                     double right,
-                                    double bottom);
+                                    double bottom,
+                                    char **error);
 
-  ~Canvas() override;
+  ~Canvas();
 
   void save();
-  void saveLayerWithoutBounds(const Paint& paint, const PaintData& paint_data);
+  void saveLayerWithoutBounds(const SkPaint& paint);
   void saveLayer(double left,
                  double top,
                  double right,
                  double bottom,
-                 const Paint& paint,
-                 const PaintData& paint_data);
+                 const SkPaint& paint);
   void restore();
   int getSaveCount();
 
@@ -53,7 +43,7 @@ class Canvas : public RefCountedDartWrappable<Canvas> {
   void scale(double sx, double sy);
   void rotate(double radians);
   void skew(double sx, double sy);
-  void transform(const tonic::Float64List& matrix4);
+  void transform(const SkMatrix& matrix4);
 
   void clipRect(double left,
                 double top,
@@ -61,41 +51,35 @@ class Canvas : public RefCountedDartWrappable<Canvas> {
                 double bottom,
                 SkClipOp clipOp,
                 bool doAntiAlias = true);
-  void clipRRect(const RRect& rrect, bool doAntiAlias = true);
-  void clipPath(const CanvasPath* path, bool doAntiAlias = true);
+  void clipRRect(const SkRRect& rrect, bool doAntiAlias = true);
+  char* clipPath(const CanvasPath* path, bool doAntiAlias = true);
 
   void drawColor(SkColor color, SkBlendMode blend_mode);
   void drawLine(double x1,
                 double y1,
                 double x2,
                 double y2,
-                const Paint& paint,
-                const PaintData& paint_data);
-  void drawPaint(const Paint& paint, const PaintData& paint_data);
+                const SkPaint& paint);
+  void drawPaint(const SkPaint& paint);
   void drawRect(double left,
                 double top,
                 double right,
                 double bottom,
-                const Paint& paint,
-                const PaintData& paint_data);
-  void drawRRect(const RRect& rrect,
-                 const Paint& paint,
-                 const PaintData& paint_data);
-  void drawDRRect(const RRect& outer,
-                  const RRect& inner,
-                  const Paint& paint,
-                  const PaintData& paint_data);
+                const SkPaint& paint);
+  void drawRRect(const SkRRect& rrect,
+                 const SkPaint& paint);
+  void drawDRRect(const SkRRect& outer,
+                  const SkRRect& inner,
+                  const SkPaint& paint);
   void drawOval(double left,
                 double top,
                 double right,
                 double bottom,
-                const Paint& paint,
-                const PaintData& paint_data);
+                const SkPaint& paint);
   void drawCircle(double x,
                   double y,
                   double radius,
-                  const Paint& paint,
-                  const PaintData& paint_data);
+                  const SkPaint& paint);
   void drawArc(double left,
                double top,
                double right,
@@ -103,74 +87,66 @@ class Canvas : public RefCountedDartWrappable<Canvas> {
                double startAngle,
                double sweepAngle,
                bool useCenter,
-               const Paint& paint,
-               const PaintData& paint_data);
-  void drawPath(const CanvasPath* path,
-                const Paint& paint,
-                const PaintData& paint_data);
-  void drawImage(const CanvasImage* image,
-                 double x,
-                 double y,
-                 const Paint& paint,
-                 const PaintData& paint_data);
-  void drawImageRect(const CanvasImage* image,
-                     double src_left,
-                     double src_top,
-                     double src_right,
-                     double src_bottom,
-                     double dst_left,
-                     double dst_top,
-                     double dst_right,
-                     double dst_bottom,
-                     const Paint& paint,
-                     const PaintData& paint_data);
-  void drawImageNine(const CanvasImage* image,
-                     double center_left,
-                     double center_top,
-                     double center_right,
-                     double center_bottom,
-                     double dst_left,
-                     double dst_top,
-                     double dst_right,
-                     double dst_bottom,
-                     const Paint& paint,
-                     const PaintData& paint_data);
-  void drawPicture(Picture* picture);
+               const SkPaint& paint);
+  char* drawPath(const CanvasPath* path,
+                 const SkPaint& paint);
+  char* drawImage(const CanvasImage* image,
+                  double x,
+                  double y,
+                  const SkPaint& paint);
+  char* drawImageRect(const CanvasImage* image,
+                      double src_left,
+                      double src_top,
+                      double src_right,
+                      double src_bottom,
+                      double dst_left,
+                      double dst_top,
+                      double dst_right,
+                      double dst_bottom,
+                      const SkPaint& paint);
+  char* drawImageNine(const CanvasImage* image,
+                      double center_left,
+                      double center_top,
+                      double center_right,
+                      double center_bottom,
+                      double dst_left,
+                      double dst_top,
+                      double dst_right,
+                      double dst_bottom,
+                      const SkPaint& paint);
+  char* drawPicture(Picture* picture);
 
   // The paint argument is first for the following functions because Paint
   // unwraps a number of C++ objects. Once we create a view unto a
   // Float32List, we cannot re-enter the VM to unwrap objects. That means we
   // either need to process the paint argument first.
 
-  void drawPoints(const Paint& paint,
-                  const PaintData& paint_data,
+  void drawPoints(const SkPaint& paint,
                   SkCanvas::PointMode point_mode,
-                  const tonic::Float32List& points);
+                  size_t count,
+                  const SkPoint pts[]);
 
-  void drawVertices(const Vertices* vertices,
-                    SkBlendMode blend_mode,
-                    const Paint& paint,
-                    const PaintData& paint_data);
+  char* drawVertices(const SkVertices* vertices,
+                     SkBlendMode blend_mode,
+                     const SkPaint& paint);
 
-  void drawAtlas(const Paint& paint,
-                 const PaintData& paint_data,
-                 CanvasImage* atlas,
-                 const tonic::Float32List& transforms,
-                 const tonic::Float32List& rects,
-                 const tonic::Int32List& colors,
-                 SkBlendMode blend_mode,
-                 const tonic::Float32List& cull_rect);
+  char* drawAtlas(const SkPaint& paint,
+                  CanvasImage* atlas,
+                  const SkRSXform transforms[],
+                  const SkRect rects[],
+                  const SkColor colors[],
+                  int count,
+                  SkBlendMode blend_mode,
+                  const SkRect* cull_rect);
 
-  void drawShadow(const CanvasPath* path,
-                  SkColor color,
-                  double elevation,
-                  bool transparentOccluder);
+  char* drawShadow(const CanvasPath* path,
+                   SkColor color,
+                   double elevation,
+                   bool transparentOccluder);
 
   SkCanvas* canvas() const { return canvas_; }
   void Clear();
   bool IsRecording() const;
-
-  static void RegisterNatives(tonic::DartLibraryNatives* natives);
 
  private:
   explicit Canvas(SkCanvas* canvas);

@@ -8,32 +8,24 @@
 #include "flutter/lib/ui/dart_wrapper.h"
 #include "flutter/lib/ui/painting/gradient.h"
 #include "flutter/lib/ui/painting/image.h"
-#include "flutter/lib/ui/painting/matrix.h"
 #include "flutter/lib/ui/painting/shader.h"
 #include "third_party/skia/include/core/SkMatrix.h"
 #include "third_party/skia/include/core/SkShader.h"
-#include "third_party/tonic/typed_data/float64_list.h"
-
-namespace tonic {
-class DartLibraryNatives;
-}  // namespace tonic
 
 namespace blink {
 
 class ImageShader : public Shader {
-  DEFINE_WRAPPERTYPEINFO();
+
   FML_FRIEND_MAKE_REF_COUNTED(ImageShader);
 
  public:
-  ~ImageShader() override;
+  ~ImageShader();
   static fml::RefPtr<ImageShader> Create();
 
-  void initWithImage(CanvasImage* image,
+  char* initWithImage(CanvasImage* image,
                      SkShader::TileMode tmx,
                      SkShader::TileMode tmy,
-                     const tonic::Float64List& matrix4);
-
-  static void RegisterNatives(tonic::DartLibraryNatives* natives);
+                     const SkMatrix& matrix);
 
  private:
   ImageShader();

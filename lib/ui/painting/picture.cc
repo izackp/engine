@@ -7,13 +7,9 @@
 #include "flutter/lib/ui/painting/canvas.h"
 #include "flutter/lib/ui/ui_dart_state.h"
 #include "third_party/skia/include/core/SkImage.h"
-#include "third_party/tonic/converter/dart_converter.h"
-#include "third_party/tonic/dart_args.h"
-#include "third_party/tonic/dart_binding_macros.h"
-#include "third_party/tonic/dart_library_natives.h"
 
 namespace blink {
-
+/*
 IMPLEMENT_WRAPPERTYPEINFO(ui, Picture);
 
 #define FOR_EACH_BINDING(V) \
@@ -22,7 +18,7 @@ IMPLEMENT_WRAPPERTYPEINFO(ui, Picture);
   V(Picture, GetAllocationSize)
 
 DART_BIND_ALL(Picture, FOR_EACH_BINDING)
-
+*/
 fml::RefPtr<Picture> Picture::Create(flow::SkiaGPUObject<SkPicture> picture) {
   return fml::MakeRefCounted<Picture>(std::move(picture));
 }
@@ -38,10 +34,6 @@ fml::RefPtr<CanvasImage> Picture::toImage(int width, int height) {
       picture_.get(), SkISize::Make(width, height), nullptr, nullptr,
       SkImage::BitDepth::kU8, SkColorSpace::MakeSRGB())));
   return image;
-}
-
-void Picture::dispose() {
-  ClearDartWrapper();
 }
 
 size_t Picture::GetAllocationSize() {

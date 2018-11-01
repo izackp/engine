@@ -5,11 +5,8 @@
 
 #include "flutter/lib/ui/painting/frame_info.h"
 
-#include "third_party/tonic/dart_binding_macros.h"
-#include "third_party/tonic/dart_library_natives.h"
-
 namespace blink {
-
+/*
 IMPLEMENT_WRAPPERTYPEINFO(ui, FrameInfo);
 
 #define FOR_EACH_BINDING(V)    \
@@ -21,5 +18,6 @@ FOR_EACH_BINDING(DART_NATIVE_CALLBACK)
 void FrameInfo::RegisterNatives(tonic::DartLibraryNatives* natives) {
   natives->Register({FOR_EACH_BINDING(DART_REGISTER_NATIVE)});
 }
+*/
 
 }  // namespace blink

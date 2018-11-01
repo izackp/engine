@@ -8,21 +8,14 @@
 #include "flutter/lib/ui/dart_wrapper.h"
 #include "flutter/lib/ui/painting/image.h"
 
-namespace tonic {
-class DartLibraryNatives;
-}  // namespace tonic
-
 namespace blink {
 
 // A single animation frame.
 class FrameInfo final : public RefCountedDartWrappable<FrameInfo> {
-  DEFINE_WRAPPERTYPEINFO();
 
  public:
   int durationMillis() { return durationMillis_; }
   fml::RefPtr<CanvasImage> image() { return image_; }
-
-  static void RegisterNatives(tonic::DartLibraryNatives* natives);
 
  private:
   FrameInfo(fml::RefPtr<CanvasImage> image, int durationMillis)

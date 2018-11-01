@@ -13,14 +13,10 @@
 #include "flutter/lib/ui/text/text_box.h"
 #include "flutter/third_party/txt/src/txt/paragraph.h"
 
-namespace tonic {
-class DartLibraryNatives;
-}  // namespace tonic
-
 namespace blink {
 
 class Paragraph : public RefCountedDartWrappable<Paragraph> {
-  DEFINE_WRAPPERTYPEINFO();
+
   FML_FRIEND_MAKE_REF_COUNTED(Paragraph);
 
  public:
@@ -29,7 +25,7 @@ class Paragraph : public RefCountedDartWrappable<Paragraph> {
     return fml::MakeRefCounted<Paragraph>(std::move(paragraph));
   }
 
-  ~Paragraph() override;
+  ~Paragraph();
 
   double width();
   double height();
@@ -43,12 +39,10 @@ class Paragraph : public RefCountedDartWrappable<Paragraph> {
   void paint(Canvas* canvas, double x, double y);
 
   std::vector<TextBox> getRectsForRange(unsigned start, unsigned end);
-  Dart_Handle getPositionForOffset(double dx, double dy);
-  Dart_Handle getWordBoundary(unsigned offset);
+  txt::Paragraph::PositionWithAffinity getPositionForOffset(double dx, double dy);
+  txt::Paragraph::Range<size_t> getWordBoundary(unsigned offset);
 
-  virtual size_t GetAllocationSize() override;
-
-  static void RegisterNatives(tonic::DartLibraryNatives* natives);
+  virtual size_t GetAllocationSize();
 
  private:
   std::unique_ptr<ParagraphImpl> m_paragraphImpl;

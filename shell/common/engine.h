@@ -17,7 +17,6 @@
 #include "flutter/lib/ui/text/font_collection.h"
 #include "flutter/lib/ui/window/platform_message.h"
 #include "flutter/lib/ui/window/viewport_metrics.h"
-#include "flutter/runtime/dart_vm.h"
 #include "flutter/runtime/runtime_controller.h"
 #include "flutter/runtime/runtime_delegate.h"
 #include "flutter/shell/common/animator.h"
@@ -42,9 +41,6 @@ class Engine final : public blink::RuntimeDelegate {
   };
 
   Engine(Delegate& delegate,
-         blink::DartVM& vm,
-         fml::RefPtr<blink::DartSnapshot> isolate_snapshot,
-         fml::RefPtr<blink::DartSnapshot> shared_snapshot,
          blink::TaskRunners task_runners,
          blink::Settings settings,
          std::unique_ptr<Animator> animator,
@@ -70,16 +66,6 @@ class Engine final : public blink::RuntimeDelegate {
   void BeginFrame(fml::TimePoint frame_time);
 
   void NotifyIdle(int64_t deadline);
-
-  Dart_Port GetUIIsolateMainPort();
-
-  std::string GetUIIsolateName();
-
-  bool UIIsolateHasLivePorts();
-
-  tonic::DartErrorHandleType GetUIIsolateLastError();
-
-  std::pair<bool, uint32_t> GetUIIsolateReturnCode();
 
   void OnOutputSurfaceCreated();
 

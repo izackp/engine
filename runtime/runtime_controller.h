@@ -14,7 +14,6 @@
 #include "flutter/lib/ui/ui_dart_state.h"
 #include "flutter/lib/ui/window/pointer_data_packet.h"
 #include "flutter/lib/ui/window/window.h"
-#include "flutter/runtime/dart_vm.h"
 
 namespace blink {
 class Scene;
@@ -25,14 +24,9 @@ class Window;
 class RuntimeController final : public WindowClient {
  public:
   RuntimeController(RuntimeDelegate& client,
-                    DartVM* vm,
-                    fml::RefPtr<DartSnapshot> isolate_snapshot,
-                    fml::RefPtr<DartSnapshot> shared_snapshot,
                     TaskRunners task_runners,
                     fml::WeakPtr<GrContext> resource_context,
-                    fml::RefPtr<flow::SkiaUnrefQueue> unref_queue,
-                    std::string advisory_script_uri,
-                    std::string advisory_script_entrypoint);
+                    fml::RefPtr<flow::SkiaUnrefQueue> unref_queue);
 
   ~RuntimeController();
 
@@ -63,18 +57,6 @@ class RuntimeController final : public WindowClient {
                                SemanticsAction action,
                                std::vector<uint8_t> args);
 
-  Dart_Port GetMainPort();
-
-  std::string GetIsolateName();
-
-  bool HasLivePorts();
-
-  tonic::DartErrorHandleType GetLastError();
-
-  std::weak_ptr<DartIsolate> GetRootIsolate();
-
-  std::pair<bool, uint32_t> GetRootIsolateReturnCode();
-
  private:
   struct WindowData {
     ViewportMetrics viewport_metrics;
@@ -87,27 +69,16 @@ class RuntimeController final : public WindowClient {
   };
 
   RuntimeDelegate& client_;
-  DartVM* const vm_;
-  fml::RefPtr<DartSnapshot> isolate_snapshot_;
-  fml::RefPtr<DartSnapshot> shared_snapshot_;
   TaskRunners task_runners_;
   fml::WeakPtr<GrContext> resource_context_;
   fml::RefPtr<flow::SkiaUnrefQueue> unref_queue_;
-  std::string advisory_script_uri_;
-  std::string advisory_script_entrypoint_;
   WindowData window_data_;
-  std::weak_ptr<DartIsolate> root_isolate_;
-  std::pair<bool, uint32_t> root_isolate_return_code_ = {false, 0};
+  UIDartState root_isolate_;
 
   RuntimeController(RuntimeDelegate& client,
-                    DartVM* vm,
-                    fml::RefPtr<DartSnapshot> isolate_snapshot,
-                    fml::RefPtr<DartSnapshot> shared_snapshot,
                     TaskRunners task_runners,
                     fml::WeakPtr<GrContext> resource_context,
                     fml::RefPtr<flow::SkiaUnrefQueue> unref_queue,
-                    std::string advisory_script_uri,
-                    std::string advisory_script_entrypoint,
                     WindowData data);
 
   Window* GetWindowIfAvailable();

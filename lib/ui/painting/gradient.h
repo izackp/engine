@@ -5,17 +5,11 @@
 #ifndef FLUTTER_LIB_UI_PAINTING_GRADIENT_H_
 #define FLUTTER_LIB_UI_PAINTING_GRADIENT_H_
 
+#include <vector>
+
 #include "flutter/lib/ui/dart_wrapper.h"
-#include "flutter/lib/ui/painting/matrix.h"
 #include "flutter/lib/ui/painting/shader.h"
 #include "third_party/skia/include/effects/SkGradientShader.h"
-#include "third_party/tonic/typed_data/float32_list.h"
-#include "third_party/tonic/typed_data/float64_list.h"
-#include "third_party/tonic/typed_data/int32_list.h"
-
-namespace tonic {
-class DartLibraryNatives;
-}  // namespace tonic
 
 namespace blink {
 
@@ -23,47 +17,48 @@ namespace blink {
 static_assert(SkShader::kTileModeCount >= 3, "Need to update tile mode enum");
 
 class CanvasGradient : public Shader {
-  DEFINE_WRAPPERTYPEINFO();
   FML_FRIEND_MAKE_REF_COUNTED(CanvasGradient);
 
  public:
-  ~CanvasGradient() override;
+  ~CanvasGradient();
   static fml::RefPtr<CanvasGradient> Create();
 
-  void initLinear(const tonic::Float32List& end_points,
-                  const tonic::Int32List& colors,
-                  const tonic::Float32List& color_stops,
+  void initLinear(const SkPoint pts[2],
+                  const SkColor colors[],
+                  const SkScalar pos[],
+                  int colorCount,
                   SkShader::TileMode tile_mode);
 
-  void initRadial(double center_x,
-                  double center_y,
-                  double radius,
-                  const tonic::Int32List& colors,
-                  const tonic::Float32List& color_stops,
+  void initRadial(SkScalar center_x,
+                  SkScalar center_y,
+                  SkScalar radius,
+                  const SkColor colors[],
+                  const SkScalar pos[],
+                  int colorCount,
                   SkShader::TileMode tile_mode,
-                  const tonic::Float64List& matrix4);
+                  const SkMatrix* localMatrix);
 
-  void initSweep(double center_x,
-                 double center_y,
-                 const tonic::Int32List& colors,
-                 const tonic::Float32List& color_stops,
+  void initSweep(SkScalar center_x,
+                 SkScalar center_y,
+                 const SkColor colors[],
+                 const SkScalar pos[],
+                 int colorCount,
                  SkShader::TileMode tile_mode,
-                 double start_angle,
-                 double end_angle,
-                 const tonic::Float64List& matrix4);
+                 SkScalar start_angle,
+                 SkScalar end_angle,
+                 const SkMatrix* localMatrix);
 
-  void initTwoPointConical(double start_x,
-                           double start_y,
-                           double start_radius,
-                           double end_x,
-                           double end_y,
-                           double end_radius,
-                           const tonic::Int32List& colors,
-                           const tonic::Float32List& color_stops,
+  void initTwoPointConical(SkScalar start_x,
+                           SkScalar start_y,
+                           SkScalar start_radius,
+                           SkScalar end_x,
+                           SkScalar end_y,
+                           SkScalar end_radius,
+                           const SkColor colors[],
+                           const SkScalar pos[],
+                           int colorCount,
                            SkShader::TileMode tile_mode,
-                           const tonic::Float64List& matrix4);
-
-  static void RegisterNatives(tonic::DartLibraryNatives* natives);
+                           const SkMatrix* localMatrix);
 
  private:
   CanvasGradient();

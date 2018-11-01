@@ -7,60 +7,32 @@
 
 #include <memory>
 #include "flutter/lib/ui/dart_wrapper.h"
-#include "flutter/lib/ui/painting/paint.h"
 #include "flutter/lib/ui/text/paragraph.h"
 #include "flutter/third_party/txt/src/txt/paragraph_builder.h"
-#include "third_party/tonic/typed_data/int32_list.h"
-
-namespace tonic {
-class DartLibraryNatives;
-}  // namespace tonic
 
 namespace blink {
 
 class Paragraph;
 
 class ParagraphBuilder : public RefCountedDartWrappable<ParagraphBuilder> {
-  DEFINE_WRAPPERTYPEINFO();
+
   FML_FRIEND_MAKE_REF_COUNTED(ParagraphBuilder);
 
  public:
-  static fml::RefPtr<ParagraphBuilder> create(tonic::Int32List& encoded,
-                                              const std::string& fontFamily,
-                                              double fontSize,
-                                              double lineHeight,
-                                              const std::u16string& ellipsis,
-                                              const std::string& locale);
+  static fml::RefPtr<ParagraphBuilder> create(const txt::TextStyle& style);
 
-  ~ParagraphBuilder() override;
+  ~ParagraphBuilder();
 
-  void pushStyle(tonic::Int32List& encoded,
-                 const std::string& fontFamily,
-                 double fontSize,
-                 double letterSpacing,
-                 double wordSpacing,
-                 double height,
-                 const std::string& locale,
-                 Dart_Handle background_objects,
-                 Dart_Handle background_data,
-                 Dart_Handle foreground_objects,
-                 Dart_Handle foreground_data);
+  void pushStyle(const txt::TextStyle& style);
 
   void pop();
 
-  Dart_Handle addText(const std::u16string& text);
+  char* addText(const std::u16string& text);
 
   fml::RefPtr<Paragraph> build();
 
-  static void RegisterNatives(tonic::DartLibraryNatives* natives);
-
  private:
-  explicit ParagraphBuilder(tonic::Int32List& encoded,
-                            const std::string& fontFamily,
-                            double fontSize,
-                            double lineHeight,
-                            const std::u16string& ellipsis,
-                            const std::string& locale);
+  explicit ParagraphBuilder(const txt::TextStyle& style);
 
   std::unique_ptr<txt::ParagraphBuilder> m_paragraphBuilder;
 };

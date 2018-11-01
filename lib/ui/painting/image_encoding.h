@@ -5,15 +5,22 @@
 #ifndef FLUTTER_LIB_UI_PAINTING_IMAGE_ENCODING_H_
 #define FLUTTER_LIB_UI_PAINTING_IMAGE_ENCODING_H_
 
-#include "third_party/tonic/dart_library_natives.h"
+#include "third_party/skia/include/core/SkImage.h"
 
 namespace blink {
 
 class CanvasImage;
 
-Dart_Handle EncodeImage(CanvasImage* canvas_image,
-                        int format,
-                        Dart_Handle callback_handle);
+//TODO: Use available skia options
+enum ImageByteFormat {
+  kRawRGBA,
+  kRawUnmodified,
+  kPNG,
+};
+
+char* EncodeImage(CanvasImage* canvas_image,
+                  ImageByteFormat format,
+                  void (*callback)(sk_sp<SkData>));
 
 }  // namespace blink
 

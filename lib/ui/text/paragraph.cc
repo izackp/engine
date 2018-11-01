@@ -16,7 +16,7 @@
 using tonic::ToDart;
 
 namespace blink {
-
+/*
 IMPLEMENT_WRAPPERTYPEINFO(ui, Paragraph);
 
 #define FOR_EACH_BINDING(V)         \
@@ -34,7 +34,7 @@ IMPLEMENT_WRAPPERTYPEINFO(ui, Paragraph);
   V(Paragraph, getPositionForOffset)
 
 DART_BIND_ALL(Paragraph, FOR_EACH_BINDING)
-
+*/
 Paragraph::Paragraph(std::unique_ptr<txt::Paragraph> paragraph)
     : m_paragraphImpl(
           std::make_unique<ParagraphImplTxt>(std::move(paragraph))) {}
@@ -88,11 +88,11 @@ std::vector<TextBox> Paragraph::getRectsForRange(unsigned start, unsigned end) {
   return m_paragraphImpl->getRectsForRange(start, end);
 }
 
-Dart_Handle Paragraph::getPositionForOffset(double dx, double dy) {
+txt::Paragraph::PositionWithAffinity Paragraph::getPositionForOffset(double dx, double dy) {
   return m_paragraphImpl->getPositionForOffset(dx, dy);
 }
 
-Dart_Handle Paragraph::getWordBoundary(unsigned offset) {
+txt::Paragraph::Range<size_t> Paragraph::getWordBoundary(unsigned offset) {
   return m_paragraphImpl->getWordBoundary(offset);
 }
 

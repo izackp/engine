@@ -20,7 +20,6 @@
 #include "flutter/fml/paths.h"
 #include "flutter/fml/trace_event.h"
 #include "flutter/fml/unique_fd.h"
-#include "flutter/runtime/dart_vm.h"
 #include "flutter/runtime/start_up.h"
 #include "flutter/shell/common/engine.h"
 #include "flutter/shell/common/skia_event_tracer_impl.h"
@@ -39,8 +38,6 @@ namespace shell {
 std::unique_ptr<Shell> Shell::CreateShellOnPlatformThread(
     blink::TaskRunners task_runners,
     blink::Settings settings,
-    fml::RefPtr<blink::DartSnapshot> isolate_snapshot,
-    fml::RefPtr<blink::DartSnapshot> shared_snapshot,
     Shell::CreateCallback<PlatformView> on_create_platform_view,
     Shell::CreateCallback<Rasterizer> on_create_rasterizer) {
   if (!task_runners.IsValid()) {
@@ -111,8 +108,6 @@ std::unique_ptr<Shell> Shell::CreateShellOnPlatformThread(
       fml::MakeCopyable([&ui_latch,                                       //
                          &engine,                                         //
                          shell = shell.get(),                             //
-                         isolate_snapshot = std::move(isolate_snapshot),  //
-                         shared_snapshot = std::move(shared_snapshot),    //
                          vsync_waiter = std::move(vsync_waiter),          //
                          resource_context = std::move(resource_context),  //
                          unref_queue = std::move(unref_queue)             //
@@ -125,9 +120,6 @@ std::unique_ptr<Shell> Shell::CreateShellOnPlatformThread(
                                                    std::move(vsync_waiter));
 
         engine = std::make_unique<Engine>(*shell,                       //
-                                          shell->GetDartVM(),           //
-                                          std::move(isolate_snapshot),  //
-                                          std::move(shared_snapshot),   //
                                           task_runners,                 //
                                           shell->GetSettings(),         //
                                           std::move(animator),          //
@@ -205,12 +197,8 @@ std::unique_ptr<Shell> Shell::Create(
     Shell::CreateCallback<Rasterizer> on_create_rasterizer) {
   PerformInitializationTasks(settings);
 
-  auto vm = blink::DartVM::ForProcess(settings);
-  FML_CHECK(vm) << "Must be able to initialize the VM.";
   return Shell::Create(std::move(task_runners),             //
                        std::move(settings),                 //
-                       vm->GetIsolateSnapshot(),            //
-                       blink::DartSnapshot::Empty(),        //
                        std::move(on_create_platform_view),  //
                        std::move(on_create_rasterizer)      //
   );
@@ -219,8 +207,6 @@ std::unique_ptr<Shell> Shell::Create(
 std::unique_ptr<Shell> Shell::Create(
     blink::TaskRunners task_runners,
     blink::Settings settings,
-    fml::RefPtr<blink::DartSnapshot> isolate_snapshot,
-    fml::RefPtr<blink::DartSnapshot> shared_snapshot,
     Shell::CreateCallback<PlatformView> on_create_platform_view,
     Shell::CreateCallback<Rasterizer> on_create_rasterizer) {
   PerformInitializationTasks(settings);
@@ -238,15 +224,11 @@ std::unique_ptr<Shell> Shell::Create(
        &shell,                                          //
        task_runners = std::move(task_runners),          //
        settings,                                        //
-       isolate_snapshot = std::move(isolate_snapshot),  //
-       shared_snapshot = std::move(shared_snapshot),    //
        on_create_platform_view,                         //
        on_create_rasterizer                             //
   ]() {
         shell = CreateShellOnPlatformThread(std::move(task_runners),      //
                                             settings,                     //
-                                            std::move(isolate_snapshot),  //
-                                            std::move(shared_snapshot),   //
                                             on_create_platform_view,      //
                                             on_create_rasterizer          //
         );
@@ -258,8 +240,7 @@ std::unique_ptr<Shell> Shell::Create(
 
 Shell::Shell(blink::TaskRunners task_runners, blink::Settings settings)
     : task_runners_(std::move(task_runners)),
-      settings_(std::move(settings)),
-      vm_(blink::DartVM::ForProcess(settings_)) {
+      settings_(std::move(settings)) {
   FML_DCHECK(task_runners_.IsValid());
   FML_DCHECK(task_runners_.GetPlatformTaskRunner()->RunsTasksOnCurrentThread());
 
@@ -293,9 +274,6 @@ Shell::Shell(blink::TaskRunners task_runners, blink::Settings settings)
 }
 
 Shell::~Shell() {
-  if (auto vm = blink::DartVM::ForProcessIfInitialized()) {
-    vm->GetServiceProtocol().RemoveHandler(this);
-  }
 
   fml::AutoResetWaitableEvent ui_latch, gpu_latch, platform_latch, io_latch;
 
@@ -366,10 +344,6 @@ bool Shell::Setup(std::unique_ptr<PlatformView> platform_view,
 
   is_setup_ = true;
 
-  if (auto vm = blink::DartVM::ForProcessIfInitialized()) {
-    vm->GetServiceProtocol().AddHandler(this);
-  }
-
   return true;
 }
 
@@ -394,10 +368,6 @@ fml::WeakPtr<Engine> Shell::GetEngine() {
 fml::WeakPtr<PlatformView> Shell::GetPlatformView() {
   FML_DCHECK(is_setup_);
   return platform_view_->GetWeakPtr();
-}
-
-blink::DartVM& Shell::GetDartVM() const {
-  return *vm_;
 }
 
 // |shell::PlatformView::Delegate|
@@ -766,10 +736,7 @@ bool Shell::HandleServiceProtocolMessage(
 // |blink::ServiceProtocol::Handler|
 blink::ServiceProtocol::Handler::Description
 Shell::GetServiceProtocolDescription() const {
-  return {
-      engine_->GetUIIsolateMainPort(),
-      engine_->GetUIIsolateName(),
-  };
+  return { };
 }
 
 static void ServiceProtocolParameterError(rapidjson::Document& response,
@@ -874,11 +841,8 @@ bool Shell::OnServiceProtocolRunInView(
 
   auto main_script_file_mapping =
       std::make_unique<fml::FileMapping>(main_script_path, false);
-
-  auto isolate_configuration = IsolateConfiguration::CreateForKernel(
-      std::move(main_script_file_mapping));
-
-  RunConfiguration configuration(std::move(isolate_configuration));
+      
+  RunConfiguration configuration = RunConfiguration();
 
   configuration.AddAssetResolver(
       std::make_unique<blink::DirectoryAssetBundle>(fml::OpenFile(

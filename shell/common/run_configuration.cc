@@ -8,7 +8,6 @@
 
 #include "flutter/assets/directory_asset_bundle.h"
 #include "flutter/fml/file.h"
-#include "flutter/runtime/dart_vm.h"
 
 namespace shell {
 
@@ -23,27 +22,22 @@ RunConfiguration RunConfiguration::InferFromSettings(
       std::make_unique<blink::DirectoryAssetBundle>(fml::OpenFile(
           settings.assets_path.c_str(), fml::OpenPermission::kRead, true)));
 
-  return {IsolateConfiguration::InferFromSettings(settings, asset_manager),
-          asset_manager};
+  return {asset_manager};
 }
 
-RunConfiguration::RunConfiguration(
-    std::unique_ptr<IsolateConfiguration> configuration)
-    : RunConfiguration(std::move(configuration),
-                       fml::MakeRefCounted<blink::AssetManager>()) {}
+RunConfiguration::RunConfiguration()
+    : RunConfiguration(fml::MakeRefCounted<blink::AssetManager>()) {}
 
 RunConfiguration::RunConfiguration(
-    std::unique_ptr<IsolateConfiguration> configuration,
     fml::RefPtr<blink::AssetManager> asset_manager)
-    : isolate_configuration_(std::move(configuration)),
-      asset_manager_(std::move(asset_manager)) {}
+    : asset_manager_(std::move(asset_manager)) {}
 
 RunConfiguration::RunConfiguration(RunConfiguration&&) = default;
 
 RunConfiguration::~RunConfiguration() = default;
 
 bool RunConfiguration::IsValid() const {
-  return asset_manager_ && isolate_configuration_;
+  return (asset_manager_.get() != nullptr);
 }
 
 bool RunConfiguration::AddAssetResolver(
@@ -76,11 +70,6 @@ const std::string& RunConfiguration::GetEntrypoint() const {
 
 const std::string& RunConfiguration::GetEntrypointLibrary() const {
   return entrypoint_library_;
-}
-
-std::unique_ptr<IsolateConfiguration>
-RunConfiguration::TakeIsolateConfiguration() {
-  return std::move(isolate_configuration_);
 }
 
 }  // namespace shell

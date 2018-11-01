@@ -9,19 +9,16 @@
 #include "flutter/lib/ui/dart_wrapper.h"
 #include "flutter/lib/ui/ui_dart_state.h"
 #include "third_party/skia/include/core/SkImage.h"
-
-namespace tonic {
-class DartLibraryNatives;
-}  // namespace tonic
+#include "flutter/lib/ui/painting/image_encoding.h"
 
 namespace blink {
 
 class CanvasImage final : public RefCountedDartWrappable<CanvasImage> {
-  DEFINE_WRAPPERTYPEINFO();
+  //DEFINE_WRAPPERTYPEINFO();
   FML_FRIEND_MAKE_REF_COUNTED(CanvasImage);
 
  public:
-  ~CanvasImage() override;
+  ~CanvasImage();
   static fml::RefPtr<CanvasImage> Create() {
     return fml::MakeRefCounted<CanvasImage>();
   }
@@ -30,7 +27,7 @@ class CanvasImage final : public RefCountedDartWrappable<CanvasImage> {
 
   int height() { return image_.get()->height(); }
 
-  Dart_Handle toByteData(int format, Dart_Handle callback);
+  char* toByteData(ImageByteFormat format, void (*callback)(sk_sp<SkData>));
 
   void dispose();
 
@@ -39,9 +36,7 @@ class CanvasImage final : public RefCountedDartWrappable<CanvasImage> {
     image_ = std::move(image);
   }
 
-  virtual size_t GetAllocationSize() override;
-
-  static void RegisterNatives(tonic::DartLibraryNatives* natives);
+  virtual size_t GetAllocationSize();
 
  private:
   CanvasImage();

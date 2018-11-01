@@ -13,17 +13,10 @@
 #include "flutter/lib/ui/window/pointer_data_packet.h"
 #include "flutter/lib/ui/window/viewport_metrics.h"
 #include "third_party/skia/include/gpu/GrContext.h"
-#include "third_party/tonic/dart_persistent_value.h"
-
-namespace tonic {
-class DartLibraryNatives;
-}  // namespace tonic
 
 namespace blink {
 class FontCollection;
 class Scene;
-
-Dart_Handle ToByteData(const std::vector<uint8_t>& buffer);
 
 // Must match the AccessibilityFeatureFlag enum in window.dart.
 enum class AccessibilityFeatureFlag : int32_t {
@@ -75,11 +68,8 @@ class Window final {
                                        std::vector<uint8_t> data);
   void CompletePlatformMessageEmptyResponse(int response_id);
 
-  static void RegisterNatives(tonic::DartLibraryNatives* natives);
-
  private:
   WindowClient* client_;
-  tonic::DartPersistentValue library_;
   ViewportMetrics viewport_metrics_;
 
   // We use id 0 to mean that no response is expected.

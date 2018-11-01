@@ -4,13 +4,8 @@
 
 #include "flutter/lib/ui/semantics/semantics_update_builder.h"
 
-#include "third_party/tonic/converter/dart_converter.h"
-#include "third_party/tonic/dart_args.h"
-#include "third_party/tonic/dart_binding_macros.h"
-#include "third_party/tonic/dart_library_natives.h"
-
 namespace blink {
-
+/*
 static void SemanticsUpdateBuilder_constructor(Dart_NativeArguments args) {
   DartCallConstructor(&SemanticsUpdateBuilder::create, args);
 }
@@ -29,7 +24,7 @@ void SemanticsUpdateBuilder::RegisterNatives(
   natives->Register({{"SemanticsUpdateBuilder_constructor",
                       SemanticsUpdateBuilder_constructor, 1, true},
                      FOR_EACH_BINDING(DART_REGISTER_NATIVE)});
-}
+}*/
 
 SemanticsUpdateBuilder::SemanticsUpdateBuilder() = default;
 
@@ -56,10 +51,10 @@ void SemanticsUpdateBuilder::updateNode(
     std::string increasedValue,
     std::string decreasedValue,
     int textDirection,
-    const tonic::Float64List& transform,
-    const tonic::Int32List& childrenInTraversalOrder,
-    const tonic::Int32List& childrenInHitTestOrder,
-    const tonic::Int32List& localContextActions) {
+    const double* transformMatrix44,
+    const std::vector<int32_t>& childrenInTraversalOrder,
+    const std::vector<int32_t>& childrenInHitTestOrder,
+    const std::vector<int32_t>& localContextActions) {
   SemanticsNode node;
   node.id = id;
   node.flags = flags;
@@ -78,17 +73,10 @@ void SemanticsUpdateBuilder::updateNode(
   node.increasedValue = increasedValue;
   node.decreasedValue = decreasedValue;
   node.textDirection = textDirection;
-  node.transform.setColMajord(transform.data());
-  node.childrenInTraversalOrder =
-      std::vector<int32_t>(childrenInTraversalOrder.data(),
-                           childrenInTraversalOrder.data() +
-                               childrenInTraversalOrder.num_elements());
-  node.childrenInHitTestOrder = std::vector<int32_t>(
-      childrenInHitTestOrder.data(),
-      childrenInHitTestOrder.data() + childrenInHitTestOrder.num_elements());
-  node.customAccessibilityActions = std::vector<int32_t>(
-      localContextActions.data(),
-      localContextActions.data() + localContextActions.num_elements());
+  node.transform.setColMajord(transformMatrix44);
+  node.childrenInTraversalOrder = childrenInTraversalOrder;
+  node.childrenInHitTestOrder = childrenInHitTestOrder;
+  node.customAccessibilityActions = localContextActions;
   nodes_[id] = node;
 }
 

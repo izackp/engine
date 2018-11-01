@@ -36,9 +36,6 @@ static constexpr char kLocalizationChannel[] = "flutter/localization";
 static constexpr char kSettingsChannel[] = "flutter/settings";
 
 Engine::Engine(Delegate& delegate,
-               blink::DartVM& vm,
-               fml::RefPtr<blink::DartSnapshot> isolate_snapshot,
-               fml::RefPtr<blink::DartSnapshot> shared_snapshot,
                blink::TaskRunners task_runners,
                blink::Settings settings,
                std::unique_ptr<Animator> animator,
@@ -55,14 +52,9 @@ Engine::Engine(Delegate& delegate,
   // we want to be fully initilazed by that point.
   runtime_controller_ = std::make_unique<blink::RuntimeController>(
       *this,                                // runtime delegate
-      &vm,                                  // VM
-      std::move(isolate_snapshot),          // isolate snapshot
-      std::move(shared_snapshot),           // shared snapshot
       std::move(task_runners),              // task runners
       std::move(resource_context),          // resource context
-      std::move(unref_queue),               // skia unref queue
-      settings_.advisory_script_uri,        // advisory script uri
-      settings_.advisory_script_entrypoint  // advisory script entrypoint
+      std::move(unref_queue)                // skia unref queue
   );
 }
 
@@ -117,60 +109,6 @@ bool Engine::Run(RunConfiguration configuration) {
     return false;
   }
 
-  std::shared_ptr<blink::DartIsolate> isolate =
-      runtime_controller_->GetRootIsolate().lock();
-
-  bool isolate_running =
-      isolate && isolate->GetPhase() == blink::DartIsolate::Phase::Running;
-
-  if (isolate_running) {
-    tonic::DartState::Scope scope(isolate.get());
-
-    if (settings_.root_isolate_create_callback) {
-      settings_.root_isolate_create_callback();
-    }
-
-    if (settings_.root_isolate_shutdown_callback) {
-      isolate->AddIsolateShutdownCallback(
-          settings_.root_isolate_shutdown_callback);
-    }
-  }
-
-  return isolate_running;
-}
-
-bool Engine::PrepareAndLaunchIsolate(RunConfiguration configuration) {
-  TRACE_EVENT0("flutter", "Engine::PrepareAndLaunchIsolate");
-
-  UpdateAssetManager(configuration.GetAssetManager());
-
-  auto isolate_configuration = configuration.TakeIsolateConfiguration();
-
-  std::shared_ptr<blink::DartIsolate> isolate =
-      runtime_controller_->GetRootIsolate().lock();
-
-  if (!isolate) {
-    return false;
-  }
-
-  if (!isolate_configuration->PrepareIsolate(*isolate)) {
-    FML_LOG(ERROR) << "Could not prepare to run the isolate.";
-    return false;
-  }
-
-  if (configuration.GetEntrypointLibrary().empty()) {
-    if (!isolate->Run(configuration.GetEntrypoint())) {
-      FML_LOG(ERROR) << "Could not run the isolate.";
-      return false;
-    }
-  } else {
-    if (!isolate->RunFromLibrary(configuration.GetEntrypointLibrary(),
-                                 configuration.GetEntrypoint())) {
-      FML_LOG(ERROR) << "Could not run the isolate.";
-      return false;
-    }
-  }
-
   return true;
 }
 
@@ -182,26 +120,6 @@ void Engine::BeginFrame(fml::TimePoint frame_time) {
 void Engine::NotifyIdle(int64_t deadline) {
   TRACE_EVENT0("flutter", "Engine::NotifyIdle");
   runtime_controller_->NotifyIdle(deadline);
-}
-
-std::pair<bool, uint32_t> Engine::GetUIIsolateReturnCode() {
-  return runtime_controller_->GetRootIsolateReturnCode();
-}
-
-Dart_Port Engine::GetUIIsolateMainPort() {
-  return runtime_controller_->GetMainPort();
-}
-
-std::string Engine::GetUIIsolateName() {
-  return runtime_controller_->GetIsolateName();
-}
-
-bool Engine::UIIsolateHasLivePorts() {
-  return runtime_controller_->HasLivePorts();
-}
-
-tonic::DartErrorHandleType Engine::GetUIIsolateLastError() {
-  return runtime_controller_->GetLastError();
 }
 
 void Engine::OnOutputSurfaceCreated() {

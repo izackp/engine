@@ -12,18 +12,15 @@
 #include "flutter/lib/ui/dart_wrapper.h"
 #include "third_party/skia/include/core/SkPicture.h"
 
-namespace tonic {
-class DartLibraryNatives;
-}  // namespace tonic
-
 namespace blink {
 
+typedef void (*ImageCallback) (fml::RefPtr<CanvasImage>);
+
 class Scene : public RefCountedDartWrappable<Scene> {
-  DEFINE_WRAPPERTYPEINFO();
   FML_FRIEND_MAKE_REF_COUNTED(Scene);
 
  public:
-  ~Scene() override;
+  ~Scene();
   static fml::RefPtr<Scene> create(std::unique_ptr<flow::Layer> rootLayer,
                                    uint32_t rasterizerTracingThreshold,
                                    bool checkerboardRasterCacheImages,
@@ -31,13 +28,11 @@ class Scene : public RefCountedDartWrappable<Scene> {
 
   std::unique_ptr<flow::LayerTree> takeLayerTree();
 
-  Dart_Handle toImage(uint32_t width,
-                      uint32_t height,
-                      Dart_Handle image_callback);
+  char* toImage(uint32_t width,
+                uint32_t height,
+                ImageCallback image_callback);
 
   void dispose();
-
-  static void RegisterNatives(tonic::DartLibraryNatives* natives);
 
  private:
   explicit Scene(std::unique_ptr<flow::Layer> rootLayer,

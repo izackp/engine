@@ -20,18 +20,13 @@
 #include "flutter/flow/layers/texture_layer.h"
 #include "flutter/flow/layers/transform_layer.h"
 #include "flutter/fml/build_config.h"
-#include "flutter/lib/ui/painting/matrix.h"
 #include "flutter/lib/ui/painting/shader.h"
 #include "flutter/lib/ui/ui_dart_state.h"
 #include "flutter/lib/ui/window/window.h"
 #include "third_party/skia/include/core/SkColorFilter.h"
-#include "third_party/tonic/converter/dart_converter.h"
-#include "third_party/tonic/dart_args.h"
-#include "third_party/tonic/dart_binding_macros.h"
-#include "third_party/tonic/dart_library_natives.h"
 
 namespace blink {
-
+/*
 static void SceneBuilder_constructor(Dart_NativeArguments args) {
   DartCallConstructor(&SceneBuilder::create, args);
 }
@@ -58,6 +53,7 @@ IMPLEMENT_WRAPPERTYPEINFO(ui, SceneBuilder);
   V(SceneBuilder, setCheckerboardRasterCacheImages) \
   V(SceneBuilder, build)
 
+
 FOR_EACH_BINDING(DART_NATIVE_CALLBACK)
 
 void SceneBuilder::RegisterNatives(tonic::DartLibraryNatives* natives) {
@@ -65,6 +61,7 @@ void SceneBuilder::RegisterNatives(tonic::DartLibraryNatives* natives) {
       {{"SceneBuilder_constructor", SceneBuilder_constructor, 1, true},
        FOR_EACH_BINDING(DART_REGISTER_NATIVE)});
 }
+*/
 
 static const SkRect kGiantRect = SkRect::MakeLTRB(-1E9F, -1E9F, 1E9F, 1E9F);
 
@@ -74,8 +71,7 @@ SceneBuilder::SceneBuilder() {
 
 SceneBuilder::~SceneBuilder() = default;
 
-void SceneBuilder::pushTransform(const tonic::Float64List& matrix4) {
-  SkMatrix sk_matrix = ToSkMatrix(matrix4);
+void SceneBuilder::pushTransform(const SkMatrix& sk_matrix) {
   SkMatrix inverse_sk_matrix;
   SkRect cullRect;
   // Perspective projections don't produce rectangles that are useful for
@@ -106,14 +102,14 @@ void SceneBuilder::pushClipRect(double left,
   PushLayer(std::move(layer), cullRect);
 }
 
-void SceneBuilder::pushClipRRect(const RRect& rrect, int clipBehavior) {
+void SceneBuilder::pushClipRRect(const SkRRect& rrect, int clipBehavior) {
   flow::Clip clip_behavior = static_cast<flow::Clip>(clipBehavior);
   SkRect cullRect;
-  if (!cullRect.intersect(rrect.sk_rrect.rect(), cull_rects_.top())) {
+  if (!cullRect.intersect(rrect.rect(), cull_rects_.top())) {
     cullRect = SkRect::MakeEmpty();
   }
   auto layer = std::make_unique<flow::ClipRRectLayer>(clip_behavior);
-  layer->set_clip_rrect(rrect.sk_rrect);
+  layer->set_clip_rrect(rrect);
   PushLayer(std::move(layer), cullRect);
 }
 
@@ -179,8 +175,7 @@ void SceneBuilder::pushPhysicalShape(const CanvasPath* path,
   layer->set_elevation(elevation);
   layer->set_color(static_cast<SkColor>(color));
   layer->set_shadow_color(static_cast<SkColor>(shadow_color));
-  layer->set_device_pixel_ratio(
-      UIDartState::Current()->window()->viewport_metrics().device_pixel_ratio);
+  layer->set_device_pixel_ratio(UIDartState::Current()->window()->viewport_metrics().device_pixel_ratio);
   PushLayer(std::move(layer), cullRect);
 }
 
@@ -236,9 +231,6 @@ void SceneBuilder::addChildScene(double dx,
                                  double height,
                                  SceneHost* sceneHost,
                                  bool hitTestable) {
-<<<<<<< HEAD
-
-=======
 #if defined(OS_FUCHSIA)
   if (!current_layer_) {
     return;
@@ -254,7 +246,6 @@ void SceneBuilder::addChildScene(double dx,
   layer->set_hit_testable(hitTestable);
   current_layer_->Add(std::move(layer));
 #endif  // defined(OS_FUCHSIA)
->>>>>>> d760794f253f6ace4595fb9596b00fba0ebf1941
 }
 
 void SceneBuilder::addPerformanceOverlay(uint64_t enabledOptions,
@@ -287,7 +278,6 @@ fml::RefPtr<Scene> SceneBuilder::build() {
   fml::RefPtr<Scene> scene = Scene::create(
       std::move(root_layer_), rasterizer_tracing_threshold_,
       checkerboard_raster_cache_images_, checkerboard_offscreen_layers_);
-  ClearDartWrapper();
   return scene;
 }
 

@@ -6,13 +6,9 @@
 
 #include "flutter/lib/ui/painting/canvas.h"
 #include "flutter/lib/ui/painting/picture.h"
-#include "third_party/tonic/converter/dart_converter.h"
-#include "third_party/tonic/dart_args.h"
-#include "third_party/tonic/dart_binding_macros.h"
-#include "third_party/tonic/dart_library_natives.h"
 
 namespace blink {
-
+/*
 static void PictureRecorder_constructor(Dart_NativeArguments args) {
   DartCallConstructor(&PictureRecorder::Create, args);
 }
@@ -29,7 +25,7 @@ void PictureRecorder::RegisterNatives(tonic::DartLibraryNatives* natives) {
   natives->Register(
       {{"PictureRecorder_constructor", PictureRecorder_constructor, 1, true},
        FOR_EACH_BINDING(DART_REGISTER_NATIVE)});
-}
+}*/
 
 fml::RefPtr<PictureRecorder> PictureRecorder::Create() {
   return fml::MakeRefCounted<PictureRecorder>();
@@ -54,9 +50,9 @@ fml::RefPtr<Picture> PictureRecorder::endRecording() {
   fml::RefPtr<Picture> picture = Picture::Create(UIDartState::CreateGPUObject(
       picture_recorder_.finishRecordingAsPicture()));
   canvas_->Clear();
-  canvas_->ClearDartWrapper();
+  //canvas_->ClearDartWrapper();
   canvas_ = nullptr;
-  ClearDartWrapper();
+  //ClearDartWrapper();
   return picture;
 }
 

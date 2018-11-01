@@ -14,7 +14,6 @@
 #include "flutter/fml/macros.h"
 #include "flutter/fml/mapping.h"
 #include "flutter/fml/unique_fd.h"
-#include "flutter/shell/common/isolate_configuration.h"
 
 namespace shell {
 
@@ -22,10 +21,9 @@ class RunConfiguration {
  public:
   static RunConfiguration InferFromSettings(const blink::Settings& settings);
 
-  RunConfiguration(std::unique_ptr<IsolateConfiguration> configuration);
+  RunConfiguration();
 
-  RunConfiguration(std::unique_ptr<IsolateConfiguration> configuration,
-                   fml::RefPtr<blink::AssetManager> asset_manager);
+  RunConfiguration(fml::RefPtr<blink::AssetManager> asset_manager);
 
   RunConfiguration(RunConfiguration&&);
 
@@ -45,10 +43,7 @@ class RunConfiguration {
 
   const std::string& GetEntrypointLibrary() const;
 
-  std::unique_ptr<IsolateConfiguration> TakeIsolateConfiguration();
-
  private:
-  std::unique_ptr<IsolateConfiguration> isolate_configuration_;
   fml::RefPtr<blink::AssetManager> asset_manager_;
   std::string entrypoint_ = "main";
   std::string entrypoint_library_ = "";
