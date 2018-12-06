@@ -1,4 +1,4 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
+// Copyright 2013 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -72,11 +72,11 @@ public class FlutterPluginRegistry
     public void attach(FlutterView flutterView, Activity activity) {
         mFlutterView = flutterView;
         mActivity = activity;
-        mPlatformViewsController.attachFlutterView(flutterView);
+        mPlatformViewsController.attach(activity, flutterView, flutterView);
     }
 
     public void detach() {
-        mPlatformViewsController.detachFlutterView();
+        mPlatformViewsController.detach();
         mPlatformViewsController.onFlutterViewDestroyed();
         mFlutterView = null;
         mActivity = null;

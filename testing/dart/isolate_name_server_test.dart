@@ -1,4 +1,4 @@
-// Copyright 2018 The Chromium Authors. All rights reserved.
+// Copyright 2013 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -89,7 +89,7 @@ void main() {
 
     // Test driver.
     final testReceivePort = new ReceivePort();
-    testReceivePort.listen(expectAsync1((List response) {
+    testReceivePort.listen(expectAsync1((response) {
       final int code = response[0];
       final String message = response[1];
       switch (code) {

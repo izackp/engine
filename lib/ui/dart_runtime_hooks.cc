@@ -1,4 +1,4 @@
-// Copyright 2014 The Chromium Authors. All rights reserved.
+// Copyright 2013 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -16,7 +16,7 @@
 #include "flutter/fml/logging.h"
 #include "flutter/lib/ui/plugins/callback_cache.h"
 #include "flutter/lib/ui/ui_dart_state.h"
-#include "third_party/dart/runtime/bin/embedded_dart_io.h"
+#include "third_party/dart/runtime/include/bin/dart_io_api.h"
 #include "third_party/dart/runtime/include/dart_api.h"
 #include "third_party/dart/runtime/include/dart_tools_api.h"
 #include "third_party/tonic/converter/dart_converter.h"
@@ -318,12 +318,14 @@ static std::string GetFunctionName(Dart_Handle func) {
 }
 
 void GetCallbackHandle(Dart_NativeArguments args) {
+  const char* kAnonymousClosureName = "<anonymous closure>";
   Dart_Handle func = Dart_GetNativeArgument(args, 0);
   std::string name = GetFunctionName(func);
   std::string class_name = GetFunctionClassName(func);
   std::string library_path = GetFunctionLibraryUrl(func);
 
-  if (name.empty()) {
+  // TODO(24394): check !Dart_IsTearOff(func) instead of string comparison.
+  if (name.empty() || (name == kAnonymousClosureName)) {
     Dart_SetReturnValue(args, Dart_Null());
     return;
   }

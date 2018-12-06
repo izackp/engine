@@ -1,4 +1,4 @@
-// Copyright 2016 The Chromium Authors. All rights reserved.
+// Copyright 2013 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -96,23 +96,28 @@ static blink::Settings DefaultSettingsForProcess(NSBundle* bundle = nil) {
   // Checks to see if the flutter assets directory is already present.
   if (settings.assets_path.size() == 0) {
     NSString* assetsName = [FlutterDartProject flutterAssetsName:bundle];
-    NSString* assetsPath = [mainBundle pathForResource:assetsName ofType:@""];
+    NSString* assetsPath = [bundle pathForResource:assetsName ofType:@""];
 
-    if (assetsPath.length > 0) {
+    if (assetsPath.length == 0) {
+      assetsPath = [mainBundle pathForResource:assetsName ofType:@""];
+    }
+
+    if (assetsPath.length == 0) {
+      NSLog(@"Failed to find assets path for \"%@\"", assetsName);
+    } else {
       settings.assets_path = assetsPath.UTF8String;
 
+      // Check if there is an application kernel snapshot in the assets directory we could
+      // potentially use.  Looking for the snapshot makes sense only if we have a VM that can use
+      // it.
       if (!blink::DartVM::IsRunningPrecompiledCode()) {
-        // Looking for the various script and kernel snapshot buffers only makes sense if we have a
-        // VM that can use these buffers.
-        {
-          // Check if there is an application kernel snapshot in the assets directory we could
-          // potentially use.
-          NSURL* applicationKernelSnapshotURL =
-              [NSURL URLWithString:@(kApplicationKernelSnapshotFileName)
-                     relativeToURL:[NSURL fileURLWithPath:assetsPath]];
-          if ([[NSFileManager defaultManager] fileExistsAtPath:applicationKernelSnapshotURL.path]) {
-            settings.application_kernel_asset = applicationKernelSnapshotURL.path.UTF8String;
-          }
+        NSURL* applicationKernelSnapshotURL =
+            [NSURL URLWithString:@(kApplicationKernelSnapshotFileName)
+                   relativeToURL:[NSURL fileURLWithPath:assetsPath]];
+        if ([[NSFileManager defaultManager] fileExistsAtPath:applicationKernelSnapshotURL.path]) {
+          settings.application_kernel_asset = applicationKernelSnapshotURL.path.UTF8String;
+        } else {
+          NSLog(@"Failed to find snapshot: %@", applicationKernelSnapshotURL.path);
         }
       }
     }
@@ -188,7 +193,24 @@ static blink::Settings DefaultSettingsForProcess(NSBundle* bundle = nil) {
 }
 
 - (shell::RunConfiguration)runConfiguration {
-  return shell::RunConfiguration::InferFromSettings(_settings);
+  return [self runConfigurationForEntrypoint:nil];
+}
+
+- (shell::RunConfiguration)runConfigurationForEntrypoint:(NSString*)entrypointOrNil {
+  return [self runConfigurationForEntrypoint:entrypointOrNil libraryOrNil:nil];
+}
+
+- (shell::RunConfiguration)runConfigurationForEntrypoint:(NSString*)entrypointOrNil
+                                            libraryOrNil:(NSString*)dartLibraryOrNil {
+  shell::RunConfiguration config = shell::RunConfiguration::InferFromSettings(_settings);
+  if (dartLibraryOrNil && entrypointOrNil) {
+    config.SetEntrypointAndLibrary(std::string([entrypointOrNil UTF8String]),
+                                   std::string([dartLibraryOrNil UTF8String]));
+
+  } else if (entrypointOrNil) {
+    config.SetEntrypoint(std::string([entrypointOrNil UTF8String]));
+  }
+  return config;
 }
 
 #pragma mark - Assets-related utilities

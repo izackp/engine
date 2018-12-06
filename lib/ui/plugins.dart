@@ -1,4 +1,4 @@
-// Copyright 2018 The Chromium Authors. All rights reserved.
+// Copyright 2013 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -32,7 +32,7 @@ abstract class PluginUtilities {
   // This class is only a namespace, and should not be instantiated or
   // extended directly.
   factory PluginUtilities._() => null;
-  
+
   static Map<Function, CallbackHandle> _forwardCache =
       <Function, CallbackHandle>{};
   static Map<CallbackHandle, Function> _backwardCache =
@@ -49,8 +49,10 @@ abstract class PluginUtilities {
   /// null is returned.
   static CallbackHandle getCallbackHandle(Function callback) {
     assert(callback != null, "'callback' must not be null.");
-    return _forwardCache.putIfAbsent(callback,
-        () => new CallbackHandle.fromRawHandle(_getCallbackHandle(callback)));
+    return _forwardCache.putIfAbsent(callback, () {
+      final int handle = _getCallbackHandle(callback);
+      return handle != null ? new CallbackHandle.fromRawHandle(handle) : null;
+    });
   }
 
   /// Get a tear-off of a named top-level or static callback represented by a

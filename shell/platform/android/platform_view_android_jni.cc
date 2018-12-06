@@ -1,4 +1,4 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
+// Copyright 2013 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -241,7 +241,7 @@ static void RunBundleAndSnapshotFromLibrary(JNIEnv* env,
                                             jstring jEntrypoint,
                                             jstring jLibraryUrl,
                                             jobject jAssetManager) {
-  auto asset_manager = fml::MakeRefCounted<blink::AssetManager>();
+  auto asset_manager = std::make_shared<blink::AssetManager>();
 
   const auto bundlepath = fml::jni::JavaStringToString(env, jbundlepath);
   if (bundlepath.size() > 0) {
@@ -252,8 +252,9 @@ static void RunBundleAndSnapshotFromLibrary(JNIEnv* env,
       asset_manager->PushBack(
           std::make_unique<blink::ZipAssetStore>(bundlepath));
     } else {
-      asset_manager->PushBack(std::make_unique<blink::DirectoryAssetBundle>(
-          fml::OpenFile(bundlepath.c_str(), fml::OpenPermission::kRead, true)));
+      asset_manager->PushBack(
+          std::make_unique<blink::DirectoryAssetBundle>(fml::OpenDirectory(
+              bundlepath.c_str(), false, fml::FilePermission::kRead)));
     }
 
     // Use the last path component of the bundle path to determine the
@@ -273,8 +274,9 @@ static void RunBundleAndSnapshotFromLibrary(JNIEnv* env,
 
   const auto defaultpath = fml::jni::JavaStringToString(env, jdefaultPath);
   if (defaultpath.size() > 0) {
-    asset_manager->PushBack(std::make_unique<blink::DirectoryAssetBundle>(
-        fml::OpenFile(defaultpath.c_str(), fml::OpenPermission::kRead, true)));
+    asset_manager->PushBack(
+        std::make_unique<blink::DirectoryAssetBundle>(fml::OpenDirectory(
+            defaultpath.c_str(), false, fml::FilePermission::kRead)));
   }
 
   auto isolate_configuration = CreateIsolateConfiguration(*asset_manager);
@@ -327,19 +329,18 @@ static void SetViewportMetrics(JNIEnv* env,
                                jint physicalViewInsetRight,
                                jint physicalViewInsetBottom,
                                jint physicalViewInsetLeft) {
-  const blink::ViewportMetrics metrics = {
-      .device_pixel_ratio = static_cast<double>(devicePixelRatio),
-      .physical_width = static_cast<double>(physicalWidth),
-      .physical_height = static_cast<double>(physicalHeight),
-      .physical_padding_top = static_cast<double>(physicalPaddingTop),
-      .physical_padding_right = static_cast<double>(physicalPaddingRight),
-      .physical_padding_bottom = static_cast<double>(physicalPaddingBottom),
-      .physical_padding_left = static_cast<double>(physicalPaddingLeft),
-      .physical_view_inset_top = static_cast<double>(physicalViewInsetTop),
-      .physical_view_inset_right = static_cast<double>(physicalViewInsetRight),
-      .physical_view_inset_bottom =
-          static_cast<double>(physicalViewInsetBottom),
-      .physical_view_inset_left = static_cast<double>(physicalViewInsetLeft),
+  const blink::ViewportMetrics metrics{
+      static_cast<double>(devicePixelRatio),
+      static_cast<double>(physicalWidth),
+      static_cast<double>(physicalHeight),
+      static_cast<double>(physicalPaddingTop),
+      static_cast<double>(physicalPaddingRight),
+      static_cast<double>(physicalPaddingBottom),
+      static_cast<double>(physicalPaddingLeft),
+      static_cast<double>(physicalViewInsetTop),
+      static_cast<double>(physicalViewInsetRight),
+      static_cast<double>(physicalViewInsetBottom),
+      static_cast<double>(physicalViewInsetLeft),
   };
 
   ANDROID_SHELL_HOLDER->SetViewportMetrics(metrics);
@@ -364,7 +365,7 @@ static jobject GetBitmap(JNIEnv* env, jobject jcaller, jlong shell_holder) {
     return nullptr;
   }
 
-  auto pixels_src = static_cast<const int32_t*>(screenshot.data->data());
+  auto* pixels_src = static_cast<const int32_t*>(screenshot.data->data());
 
   // Our configuration of Skia does not support rendering to the
   // BitmapConfig.ARGB_8888 format expected by android.graphics.Bitmap.

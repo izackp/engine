@@ -1,4 +1,4 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
+// Copyright 2013 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,6 +7,20 @@
 //REMOVED_DART: Refer to git history if needed
 namespace fml {
 namespace tracing {
+
+void TraceCounter(TraceArg category_group, TraceArg name, TraceIDArg count) {
+  auto count_string = std::to_string(count);
+  const char* arg_names[] = {name};
+  const char* arg_values[] = {count_string.c_str()};
+  Dart_TimelineEvent(name,                         // label
+                     Dart_TimelineGetMicros(),     // timestamp0
+                     0,                            // timestamp1_or_async_id
+                     Dart_Timeline_Event_Counter,  // event type
+                     1,                            // argument_count
+                     arg_names,                    // argument_names
+                     arg_values                    // argument_values
+  );
+}
 
 void TraceEvent0(TraceArg category_group, TraceArg name) {
 

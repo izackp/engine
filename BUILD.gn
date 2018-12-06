@@ -1,4 +1,4 @@
-# Copyright 2014 The Chromium Authors. All rights reserved.
+# Copyright 2013 The Flutter Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -16,12 +16,6 @@ group("flutter") {
 
   if (current_toolchain == host_toolchain) {
     public_deps += [ "$flutter_root/shell/testing" ]
-  }
-
-  if (flutter_runtime_mode != "debug" &&
-      flutter_runtime_mode != "dynamic_profile" &&
-      flutter_runtime_mode != "dynamic_release") {
-    public_deps += [ "$flutter_root/lib/snapshot:entry_points_json_files" ]
   }
 
   if (!is_fuchsia && !is_fuchsia_host) {
@@ -49,6 +43,10 @@ group("flutter") {
       "$flutter_root/synchronization:synchronization_unittests",
       "$flutter_root/third_party/txt:txt_unittests",
     ]
+
+    if (!is_win) {
+      public_deps += [ "$flutter_root/shell/common:shell_benchmarks" ]
+    }
   }
 }
 
