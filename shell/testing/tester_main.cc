@@ -236,8 +236,6 @@ int main(int argc, char* argv[]) {
     return EXIT_FAILURE;
   }
 
-  settings.icu_data_path = "icudtl.dat";
-
   // The tools that read logs get confused if there is a log tag specified.
   settings.log_tag = "";
 

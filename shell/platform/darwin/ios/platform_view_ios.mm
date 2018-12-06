@@ -85,12 +85,4 @@ std::unique_ptr<VsyncWaiter> PlatformViewIOS::CreateVSyncWaiter() {
   return std::make_unique<VsyncWaiterIOS>(task_runners_);
 }
 
-fml::scoped_nsprotocol<FlutterTextInputPlugin*> PlatformViewIOS::GetTextInputPlugin() const {
-  return text_input_plugin_;
-}
-
-void PlatformViewIOS::SetTextInputPlugin(fml::scoped_nsprotocol<FlutterTextInputPlugin*> plugin) {
-  text_input_plugin_ = plugin;
-}
-
 }  // namespace shell

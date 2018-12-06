@@ -29,11 +29,10 @@ struct Settings {
   std::string isolate_snapshot_instr_path;
 
   std::string application_library_path;
-  std::string application_kernel_asset;
   std::string application_kernel_list_asset;
 
   //std::string main_dart_file_path;
-  std::string packages_file_path;
+  //std::string packages_file_path;
 
   std::string temp_directory_path;
   //std::vector<std::string> dart_flags;
@@ -75,7 +74,6 @@ struct Settings {
   bool skia_deterministic_rendering_on_cpu = false;
   bool verbose_logging = false;
   std::string log_tag = "flutter";
-  std::string icu_data_path;
 
   // Assets settings
   fml::UniqueFD::element_type assets_dir =

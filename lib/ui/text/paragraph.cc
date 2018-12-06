@@ -8,12 +8,6 @@
 #include "flutter/common/task_runners.h"
 #include "flutter/fml/logging.h"
 #include "flutter/fml/task_runner.h"
-#include "third_party/tonic/converter/dart_converter.h"
-#include "third_party/tonic/dart_args.h"
-#include "third_party/tonic/dart_binding_macros.h"
-#include "third_party/tonic/dart_library_natives.h"
-
-using tonic::ToDart;
 
 namespace blink {
 /*

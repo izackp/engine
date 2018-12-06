@@ -12,10 +12,6 @@
 #include "flutter/fml/platform/darwin/platform_version.h"
 #include "flutter/fml/platform/darwin/scoped_nsobject.h"
 #include "flutter/shell/common/thread_host.h"
-#include "flutter/shell/platform/darwin/ios/framework/Source/FlutterDartProject_Internal.h"
-#include "flutter/shell/platform/darwin/ios/framework/Source/FlutterPlatformPlugin.h"
-#include "flutter/shell/platform/darwin/ios/framework/Source/FlutterTextInputDelegate.h"
-#include "flutter/shell/platform/darwin/ios/framework/Source/FlutterTextInputPlugin.h"
 #include "flutter/shell/platform/darwin/ios/framework/Source/FlutterView.h"
 #include "flutter/shell/platform/darwin/ios/framework/Source/flutter_touch_mapper.h"
 #include "flutter/shell/platform/darwin/ios/framework/Source/platform_message_response_darwin.h"
@@ -25,23 +21,12 @@
 @property(nonatomic, readonly) NSMutableDictionary* pluginPublications;
 @end
 
-@interface FlutterViewControllerRegistrar : NSObject <FlutterPluginRegistrar>
-- (instancetype)initWithPlugin:(NSString*)pluginKey
-         flutterViewController:(FlutterViewController*)flutterViewController;
-@end
-
 @implementation FlutterViewController {
-  fml::scoped_nsobject<FlutterDartProject> _dartProject;
+  blink::Settings _settings;
   shell::ThreadHost _threadHost;
   std::unique_ptr<shell::Shell> _shell;
 
   // Channels
-  fml::scoped_nsobject<FlutterPlatformPlugin> _platformPlugin;
-  fml::scoped_nsobject<FlutterTextInputPlugin> _textInputPlugin;
-  fml::scoped_nsobject<FlutterMethodChannel> _localizationChannel;
-  fml::scoped_nsobject<FlutterMethodChannel> _navigationChannel;
-  fml::scoped_nsobject<FlutterMethodChannel> _platformChannel;
-  fml::scoped_nsobject<FlutterMethodChannel> _textInputChannel;
   fml::scoped_nsobject<FlutterBasicMessageChannel> _lifecycleChannel;
   fml::scoped_nsobject<FlutterBasicMessageChannel> _systemChannel;
   fml::scoped_nsobject<FlutterBasicMessageChannel> _settingsChannel;
@@ -60,15 +45,11 @@
 
 #pragma mark - Manage and override all designated initializers
 
-- (instancetype)initWithProject:(FlutterDartProject*)projectOrNil
-                        nibName:(NSString*)nibNameOrNil
+- (instancetype)initWithNibName:(NSString*)nibNameOrNil
                          bundle:(NSBundle*)nibBundleOrNil {
   self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
   if (self) {
-    if (projectOrNil == nil)
-      _dartProject.reset([[FlutterDartProject alloc] init]);
-    else
-      _dartProject.reset([projectOrNil retain]);
+    _settings = DefaultSettingsForProcess()
 
     [self performCommonViewControllerInitialization];
   }
@@ -102,8 +83,6 @@
   if ([self setupShell]) {
     [self setupChannels];
     [self setupNotificationCenterObservers];
-
-    _pluginPublications = [NSMutableDictionary new];
   }
 }
 
@@ -160,7 +139,7 @@
 
   // Create the shell.
   _shell = shell::Shell::Create(std::move(task_runners),  //
-                                [_dartProject settings],  //
+                                _settings,  //
                                 on_create_platform_view,  //
                                 on_create_rasterizer      //
   );
@@ -174,25 +153,6 @@
 }
 
 - (void)setupChannels {
-  _localizationChannel.reset([[FlutterMethodChannel alloc]
-         initWithName:@"flutter/localization"
-      binaryMessenger:self
-                codec:[FlutterJSONMethodCodec sharedInstance]]);
-
-  _navigationChannel.reset([[FlutterMethodChannel alloc]
-         initWithName:@"flutter/navigation"
-      binaryMessenger:self
-                codec:[FlutterJSONMethodCodec sharedInstance]]);
-
-  _platformChannel.reset([[FlutterMethodChannel alloc]
-         initWithName:@"flutter/platform"
-      binaryMessenger:self
-                codec:[FlutterJSONMethodCodec sharedInstance]]);
-
-  _textInputChannel.reset([[FlutterMethodChannel alloc]
-         initWithName:@"flutter/textinput"
-      binaryMessenger:self
-                codec:[FlutterJSONMethodCodec sharedInstance]]);
 
   _lifecycleChannel.reset([[FlutterBasicMessageChannel alloc]
          initWithName:@"flutter/lifecycle"
@@ -208,19 +168,6 @@
          initWithName:@"flutter/settings"
       binaryMessenger:self
                 codec:[FlutterJSONMessageCodec sharedInstance]]);
-
-  _platformPlugin.reset([[FlutterPlatformPlugin alloc] init]);
-  [_platformChannel.get() setMethodCallHandler:^(FlutterMethodCall* call, FlutterResult result) {
-    [_platformPlugin.get() handleMethodCall:call result:result];
-  }];
-
-  _textInputPlugin.reset([[FlutterTextInputPlugin alloc] init]);
-  _textInputPlugin.get().textInputDelegate = self;
-  [_textInputChannel.get() setMethodCallHandler:^(FlutterMethodCall* call, FlutterResult result) {
-    [_textInputPlugin.get() handleMethodCall:call result:result];
-  }];
-  static_cast<shell::PlatformViewIOS*>(_shell->GetPlatformView().get())
-      ->SetTextInputPlugin(_textInputPlugin);
 }
 
 - (void)setupNotificationCenterObservers {
@@ -266,11 +213,6 @@
                object:nil];
 
   [center addObserver:self
-             selector:@selector(onLocaleUpdated:)
-                 name:NSCurrentLocaleDidChangeNotification
-               object:nil];
-
-  [center addObserver:self
              selector:@selector(onAccessibilityStatusChanged:)
                  name:UIAccessibilityVoiceOverStatusChanged
                object:nil];
@@ -309,10 +251,6 @@
              selector:@selector(onUserSettingsChanged:)
                  name:UIContentSizeCategoryDidChangeNotification
                object:nil];
-}
-
-- (void)setInitialRoute:(NSString*)route {
-  [_navigationChannel.get() invokeMethod:@"setInitialRoute" arguments:route];
 }
 
 #pragma mark - Loading the view
@@ -431,8 +369,8 @@
 
   // Launch the Dart application with the inferred run configuration.
   _shell->GetTaskRunners().GetUITaskRunner()->PostTask(
-      fml::MakeCopyable([engine = _shell->GetEngine(),                   //
-                         config = [_dartProject.get() runConfiguration]  //
+      fml::MakeCopyable([engine = _shell->GetEngine(),
+                         config = shell::RunConfiguration::InferFromSettings(_settings)
   ]() mutable {
         if (engine) {
           auto result = engine->Run(std::move(config));
@@ -453,7 +391,6 @@
 
 - (void)viewDidAppear:(BOOL)animated {
   TRACE_EVENT0("flutter", "viewDidAppear");
-  [self onLocaleUpdated:nil];
   [self onUserSettingsChanged:nil];
   [self onAccessibilityStatusChanged:nil];
   [_lifecycleChannel.get() sendMessage:@"AppLifecycleState.resumed"];
@@ -478,7 +415,6 @@
 
 - (void)dealloc {
   [[NSNotificationCenter defaultCenter] removeObserver:self];
-  [_pluginPublications release];
   [super dealloc];
 }
 
@@ -749,58 +685,6 @@ static inline blink::PointerData::DeviceKind DeviceKindFromTouchType(UITouch* to
   [self updateViewportMetrics];
 }
 
-#pragma mark - Text input delegate
-
-- (void)updateEditingClient:(int)client withState:(NSDictionary*)state {
-  [_textInputChannel.get() invokeMethod:@"TextInputClient.updateEditingState"
-                              arguments:@[ @(client), state ]];
-}
-
-- (void)performAction:(FlutterTextInputAction)action withClient:(int)client {
-  NSString* actionString;
-  switch (action) {
-    case FlutterTextInputActionUnspecified:
-      // Where did the term "unspecified" come from? iOS has a "default" and Android
-      // has "unspecified." These 2 terms seem to mean the same thing but we need
-      // to pick just one. "unspecified" was chosen because "default" is often a
-      // reserved word in languages with switch statements (dart, java, etc).
-      actionString = @"TextInputAction.unspecified";
-      break;
-    case FlutterTextInputActionDone:
-      actionString = @"TextInputAction.done";
-      break;
-    case FlutterTextInputActionGo:
-      actionString = @"TextInputAction.go";
-      break;
-    case FlutterTextInputActionSend:
-      actionString = @"TextInputAction.send";
-      break;
-    case FlutterTextInputActionSearch:
-      actionString = @"TextInputAction.search";
-      break;
-    case FlutterTextInputActionNext:
-      actionString = @"TextInputAction.next";
-      break;
-    case FlutterTextInputActionContinue:
-      actionString = @"TextInputAction.continue";
-      break;
-    case FlutterTextInputActionJoin:
-      actionString = @"TextInputAction.join";
-      break;
-    case FlutterTextInputActionRoute:
-      actionString = @"TextInputAction.route";
-      break;
-    case FlutterTextInputActionEmergencyCall:
-      actionString = @"TextInputAction.emergencyCall";
-      break;
-    case FlutterTextInputActionNewline:
-      actionString = @"TextInputAction.newline";
-      break;
-  }
-  [_textInputChannel.get() invokeMethod:@"TextInputClient.performAction"
-                              arguments:@[ @(client), actionString ]];
-}
-
 #pragma mark - Orientation updates
 
 - (void)onOrientationPreferencesUpdated:(NSNotification*)notification {
@@ -861,16 +745,6 @@ static inline blink::PointerData::DeviceKind DeviceKindFromTouchType(UITouch* to
 
 - (void)onMemoryWarning:(NSNotification*)notification {
   [_systemChannel.get() sendMessage:@{@"type" : @"memoryPressure"}];
-}
-
-#pragma mark - Locale updates
-
-- (void)onLocaleUpdated:(NSNotification*)notification {
-  NSLocale* currentLocale = [NSLocale currentLocale];
-  NSString* languageCode = [currentLocale objectForKey:NSLocaleLanguageCode];
-  NSString* countryCode = [currentLocale objectForKey:NSLocaleCountryCode];
-  if (languageCode && countryCode)
-    [_localizationChannel.get() invokeMethod:@"setLocale" arguments:@[ languageCode, countryCode ]];
 }
 
 #pragma mark - Set user settings
@@ -1058,90 +932,24 @@ constexpr CGFloat kStandardStatusBarHeight = 20.0;
   _shell->GetPlatformView()->MarkTextureFrameAvailable(textureId);
 }
 
-- (NSString*)lookupKeyForAsset:(NSString*)asset {
-  return [FlutterDartProject lookupKeyForAsset:asset];
-}
+static blink::Settings DefaultSettingsForProcess() {
+  auto command_line = shell::CommandLineFromNSProcessInfo();
 
-- (NSString*)lookupKeyForAsset:(NSString*)asset fromPackage:(NSString*)package {
-  return [FlutterDartProject lookupKeyForAsset:asset fromPackage:package];
-}
+  // Precedence:
+  // 1. Settings from the specified NSBundle.
+  // 2. Settings passed explicitly via command-line arguments.
 
-- (id<FlutterPluginRegistry>)pluginRegistry {
-  return self;
-}
+  auto settings = shell::SettingsFromCommandLine(command_line);
 
-#pragma mark - FlutterPluginRegistry
+  settings.task_observer_add = [](intptr_t key, fml::closure callback) {
+    fml::MessageLoop::GetCurrent().AddTaskObserver(key, std::move(callback));
+  };
 
-- (NSObject<FlutterPluginRegistrar>*)registrarForPlugin:(NSString*)pluginKey {
-  NSAssert(self.pluginPublications[pluginKey] == nil, @"Duplicate plugin key: %@", pluginKey);
-  self.pluginPublications[pluginKey] = [NSNull null];
-  return
-      [[FlutterViewControllerRegistrar alloc] initWithPlugin:pluginKey flutterViewController:self];
-}
+  settings.task_observer_remove = [](intptr_t key) {
+    fml::MessageLoop::GetCurrent().RemoveTaskObserver(key);
+  };
 
-- (BOOL)hasPlugin:(NSString*)pluginKey {
-  return _pluginPublications[pluginKey] != nil;
-}
-
-- (NSObject*)valuePublishedByPlugin:(NSString*)pluginKey {
-  return _pluginPublications[pluginKey];
-}
-@end
-
-@implementation FlutterViewControllerRegistrar {
-  NSString* _pluginKey;
-  FlutterViewController* _flutterViewController;
-}
-
-- (instancetype)initWithPlugin:(NSString*)pluginKey
-         flutterViewController:(FlutterViewController*)flutterViewController {
-  self = [super init];
-  NSAssert(self, @"Super init cannot be nil");
-  _pluginKey = [pluginKey retain];
-  _flutterViewController = [flutterViewController retain];
-  return self;
-}
-
-- (void)dealloc {
-  [_pluginKey release];
-  [_flutterViewController release];
-  [super dealloc];
-}
-
-- (NSObject<FlutterBinaryMessenger>*)messenger {
-  return _flutterViewController;
-}
-
-- (NSObject<FlutterTextureRegistry>*)textures {
-  return _flutterViewController;
-}
-
-- (void)publish:(NSObject*)value {
-  _flutterViewController.pluginPublications[_pluginKey] = value;
-}
-
-- (void)addMethodCallDelegate:(NSObject<FlutterPlugin>*)delegate
-                      channel:(FlutterMethodChannel*)channel {
-  [channel setMethodCallHandler:^(FlutterMethodCall* call, FlutterResult result) {
-    [delegate handleMethodCall:call result:result];
-  }];
-}
-
-- (void)addApplicationDelegate:(NSObject<FlutterPlugin>*)delegate {
-  id<UIApplicationDelegate> appDelegate = [[UIApplication sharedApplication] delegate];
-  if ([appDelegate conformsToProtocol:@protocol(FlutterAppLifeCycleProvider)]) {
-    id<FlutterAppLifeCycleProvider> lifeCycleProvider =
-        (id<FlutterAppLifeCycleProvider>)appDelegate;
-    [lifeCycleProvider addApplicationLifeCycleDelegate:delegate];
-  }
-}
-
-- (NSString*)lookupKeyForAsset:(NSString*)asset {
-  return [_flutterViewController lookupKeyForAsset:asset];
-}
-
-- (NSString*)lookupKeyForAsset:(NSString*)asset fromPackage:(NSString*)package {
-  return [_flutterViewController lookupKeyForAsset:asset fromPackage:package];
+  return settings;
 }
 
 @end

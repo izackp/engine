@@ -8,7 +8,7 @@
 
 namespace blink {
 
-IMPLEMENT_WRAPPERTYPEINFO(ui, Shader);
+//IMPLEMENT_WRAPPERTYPEINFO(ui, Shader);
 
 Shader::Shader(flow::SkiaGPUObject<SkShader> shader)
     : shader_(std::move(shader)) {}

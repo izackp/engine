@@ -4,58 +4,6 @@
 
 import("$flutter_root/testing/testing.gni")
 
-# Template to generate a dart embedder resource.cc file.
-# Required invoker inputs:
-#   String output (name of output file)
-#   List inputs (list of input files to be included)
-#   String table_name (name of symbol for resource table)
-#   String root_prefix (base directory of resources)
-# Optional invoker inputs:
-#   String input_directory (directory of resources that are recursively added)
-#   List deps
-#   List datadeps
-template("dart_embedder_resources") {
-  action(target_name) {
-    script = "//third_party/dart/runtime/tools/create_resources.py"
-    deps = []
-    if (defined(invoker.deps)) {
-      deps += invoker.deps
-    }
-    datadeps = []
-    if (defined(invoker.datadeps)) {
-      datadeps = invoker.datadeps
-    }
-
-    output = invoker.output
-    outputs = [
-      output,
-    ]
-
-    inputs = [ script ] + invoker.inputs
-
-    root_prefix = rebase_path(invoker.root_prefix)
-
-    args = [
-      "--output",
-      rebase_path(output),
-      "--outer_namespace",
-      "flutter",
-      "--inner_namespace",
-      "runtime",
-      "--table_name",
-      invoker.table_name,
-      "--root_prefix",
-      root_prefix,
-    ]
-    if (defined(invoker.input_directory)) {
-      args += [
-        "--client_root",
-        rebase_path(invoker.input_directory),
-      ]
-    }
-    args += rebase_path(invoker.inputs)
-  }
-}
 
 source_set("common") {
   sources = [
@@ -65,8 +13,6 @@ source_set("common") {
     "engine.h",
     "io_manager.cc",
     "io_manager.h",
-    "isolate_configuration.cc",
-    "isolate_configuration.h",
     "platform_view.cc",
     "platform_view.h",
     "rasterizer.cc",
@@ -97,7 +43,6 @@ source_set("common") {
     "$flutter_root/lib/ui",
     "$flutter_root/runtime",
     "$flutter_root/synchronization",
-    "//third_party/dart/runtime:dart_api",
     "//third_party/rapidjson",
     "//third_party/skia",
     "//third_party/skia:gpu",
@@ -106,28 +51,8 @@ source_set("common") {
   public_deps = [
     "$flutter_root/shell/version",
     "$flutter_root/third_party/txt",
-    "//third_party/tonic",
   ]
 
   public_configs = [ "$flutter_root:config" ]
 }
 
-executable("shell_unittests") {
-  testonly = true
-
-  sources = [
-    "shell_unittests.cc",
-  ]
-  deps = [
-    ":common",
-    "$flutter_root/fml",
-    "$flutter_root/lib/snapshot",
-    "$flutter_root/testing",
-    "//third_party/dart/runtime:libdart_jit",
-    "//third_party/skia",
-    "//third_party/tonic",
-  ]
-  if (is_linux) {
-    ldflags = [ "-rdynamic" ]
-  }
-}

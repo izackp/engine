@@ -240,6 +240,7 @@ char* InstantiateImageCodec(const uint8_t* list, int count, std::unique_ptr<Imag
                                         std::move(buffer),
                                         std::move(image_info), trace_id);
       }));
+  return nullptr;
 }
 
 bool copy_to(SkBitmap* dst, SkColorType dstColorType, const SkBitmap& src) {
@@ -313,7 +314,7 @@ sk_sp<SkImage> MultiFrameCodec::GetNextFrameImage(
     SkCodec::Options options;
     options.fFrameIndex = nextFrameIndex_;
     const int requiredFrame = frameInfos_[nextFrameIndex_].fRequiredFrame;
-    if (requiredFrame != SkCodec::kNone) {
+    if (requiredFrame != SkCodec::kNoFrame) {
       if (requiredFrame < 0 ||
           static_cast<size_t>(requiredFrame) >= frameBitmaps_.size()) {
         FML_LOG(ERROR) << "Frame " << nextFrameIndex_ << " depends on frame "

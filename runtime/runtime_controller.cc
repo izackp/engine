@@ -39,17 +39,14 @@ RuntimeController::RuntimeController(
       resource_context_(p_resource_context),
       unref_queue_(p_unref_queue),
       window_data_(p_window_data),//TODO: was std::Move 
-      root_isolate_(
-                    UIDartState(
-                                task_runners_,
-                                nullptr,
-                                nullptr,
-                                resource_context_,
-                                unref_queue_,
-                                nullptr)) {
+      root_isolate_(task_runners_,
+                          nullptr,
+                          nullptr,
+                          resource_context_,
+                          unref_queue_,
+                          nullptr) {
   //std::shared_ptr<UIDartState> root_isolate = root_isolate_.lock();
   if (auto window = GetWindowIfAvailable()) {
-    window->DidCreateIsolate();
     
     if (!FlushRuntimeStateToIsolate()) {
       FML_DLOG(ERROR) << "Could not setup intial isolate state.";

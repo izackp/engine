@@ -5,7 +5,6 @@
 #include "flutter/shell/common/animator.h"
 
 #include "flutter/fml/trace_event.h"
-#include "third_party/dart/runtime/include/dart_tools_api.h"
 
 namespace shell {
 
@@ -64,12 +63,6 @@ const char* Animator::FrameParity() {
   return (frame_number_ % 2) ? "even" : "odd";
 }
 
-static int64_t FxlToDartOrEarlier(fml::TimePoint time) {
-  int64_t dart_now = Dart_TimelineGetMicros();
-  fml::TimePoint fxl_now = fml::TimePoint::Now();
-  return (time - fxl_now).ToMicroseconds() + dart_now;
-}
-
 void Animator::BeginFrame(fml::TimePoint frame_start_time,
                           fml::TimePoint frame_target_time) {
   TRACE_EVENT_ASYNC_END0("flutter", "Frame Request Pending", frame_number_++);
@@ -99,7 +92,7 @@ void Animator::BeginFrame(fml::TimePoint frame_start_time,
   FML_DCHECK(producer_continuation_);
 
   last_begin_frame_time_ = frame_start_time;
-  dart_frame_deadline_ = FxlToDartOrEarlier(frame_target_time);
+  dart_frame_deadline_ = frame_target_time.ToEpochDelta().ToMicroseconds();
   {
     TRACE_EVENT2("flutter", "Framework Workload", "mode", "basic", "frame",
                  FrameParity());
@@ -124,7 +117,7 @@ void Animator::BeginFrame(fml::TimePoint frame_start_time,
           // no further frames were produced, and it is safe (w.r.t. jank) to
           // notify the engine we are idle.
           if (notify_idle_task_id == self->notify_idle_task_id_) {
-            self->delegate_.OnAnimatorNotifyIdle(Dart_TimelineGetMicros() +
+            self->delegate_.OnAnimatorNotifyIdle(fml::TimePoint::Now().ToEpochDelta().ToMicroseconds() +
                                                  100000);
           }
         },

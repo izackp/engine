@@ -15,7 +15,6 @@
 #include "flutter/shell/platform/darwin/ios/framework/Headers/FlutterTexture.h"
 #include "flutter/shell/platform/darwin/ios/framework/Headers/FlutterViewController.h"
 #include "flutter/shell/platform/darwin/ios/framework/Source/FlutterView.h"
-#include "flutter/shell/platform/darwin/ios/framework/Source/accessibility_bridge.h"
 #include "flutter/shell/platform/darwin/ios/headless_platform_view_ios.h"
 #include "flutter/shell/platform/darwin/ios/ios_surface.h"
 
@@ -33,11 +32,6 @@ class PlatformViewIOS final : public HeadlessPlatformViewIOS {
   FlutterViewController* GetOwnerViewController() const;
 
   void RegisterExternalTexture(int64_t id, NSObject<FlutterTexture>* texture);
-
-  fml::scoped_nsprotocol<FlutterTextInputPlugin*> GetTextInputPlugin() const;
-
-  void SetTextInputPlugin(
-      fml::scoped_nsprotocol<FlutterTextInputPlugin*> plugin);
 
  private:
   FlutterViewController* owner_controller_;  // weak reference.

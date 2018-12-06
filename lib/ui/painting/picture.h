@@ -27,8 +27,6 @@ class Picture : public RefCountedDartWrappable<Picture> {
 
   virtual size_t GetAllocationSize();
 
-  static void RegisterNatives(tonic::DartLibraryNatives* natives);
-
  private:
   explicit Picture(flow::SkiaGPUObject<SkPicture> picture);
 

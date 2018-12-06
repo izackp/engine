@@ -19,7 +19,7 @@ class ParagraphBuilder : public RefCountedDartWrappable<ParagraphBuilder> {
   FML_FRIEND_MAKE_REF_COUNTED(ParagraphBuilder);
 
  public:
-  static fml::RefPtr<ParagraphBuilder> create(const txt::TextStyle& style);
+  static fml::RefPtr<ParagraphBuilder> create(const txt::ParagraphStyle& style);
 
   ~ParagraphBuilder();
 
@@ -32,7 +32,7 @@ class ParagraphBuilder : public RefCountedDartWrappable<ParagraphBuilder> {
   fml::RefPtr<Paragraph> build();
 
  private:
-  explicit ParagraphBuilder(const txt::TextStyle& style);
+  explicit ParagraphBuilder(const txt::ParagraphStyle& style);
 
   std::unique_ptr<txt::ParagraphBuilder> m_paragraphBuilder;
 };

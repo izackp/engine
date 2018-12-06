@@ -165,8 +165,7 @@ blink::Settings SettingsFromCommandLine(const fml::CommandLine& command_line) {
   command_line.GetOptionValue(FlagForSwitch(Switch::FlutterAssetsDir),
                               &settings.assets_path);
 
-  command_line.GetOptionValue(FlagForSwitch(Switch::Packages),
-                              &settings.packages_file_path);
+  //command_line.GetOptionValue(FlagForSwitch(Switch::Packages), &settings.packages_file_path);
 
   std::string aot_shared_library_path;
   command_line.GetOptionValue(FlagForSwitch(Switch::AotSharedLibraryPath),
@@ -208,9 +207,6 @@ blink::Settings SettingsFromCommandLine(const fml::CommandLine& command_line) {
 
   command_line.GetOptionValue(FlagForSwitch(Switch::CacheDirPath),
                               &settings.temp_directory_path);
-
-  command_line.GetOptionValue(FlagForSwitch(Switch::ICUDataFilePath),
-                              &settings.icu_data_path);
 
   settings.use_test_fonts =
       command_line.HasOption(FlagForSwitch(Switch::UseTestFonts));

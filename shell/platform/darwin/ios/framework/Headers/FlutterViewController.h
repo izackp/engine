@@ -16,42 +16,13 @@
 
 FLUTTER_EXPORT
 @interface FlutterViewController
-    : UIViewController <FlutterBinaryMessenger, FlutterTextureRegistry, FlutterPluginRegistry>
+    : UIViewController <FlutterBinaryMessenger, FlutterTextureRegistry>
 
-- (instancetype)initWithProject:(FlutterDartProject*)projectOrNil
-                        nibName:(NSString*)nibNameOrNil
+- (instancetype)initWithNibName:(NSString*)nibNameOrNil
                          bundle:(NSBundle*)nibBundleOrNil NS_DESIGNATED_INITIALIZER;
 
 - (void)handleStatusBarTouches:(UIEvent*)event;
 
-/**
- Returns the file name for the given asset.
- The returned file name can be used to access the asset in the application's main bundle.
-
- - Parameter asset: The name of the asset. The name can be hierarchical.
- - Returns: the file name to be used for lookup in the main bundle.
- */
-- (NSString*)lookupKeyForAsset:(NSString*)asset;
-
-/**
- Returns the file name for the given asset which originates from the specified package.
- The returned file name can be used to access the asset in the application's main bundle.
-
- - Parameters:
-   - asset: The name of the asset. The name can be hierarchical.
-   - package: The name of the package from which the asset originates.
- - Returns: the file name to be used for lookup in the main bundle.
- */
-- (NSString*)lookupKeyForAsset:(NSString*)asset fromPackage:(NSString*)package;
-
-/**
- Sets the first route that the Flutter app shows. The default is "/".
-
- - Parameter route: The name of the first route to show.
- */
-- (void)setInitialRoute:(NSString*)route;
-
-- (id<FlutterPluginRegistry>)pluginRegistry;
 
 /**
  Specifies the view to use as a splash screen. Flutter's rendering is asynchronous, so the first

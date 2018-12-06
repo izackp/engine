@@ -12,11 +12,11 @@ namespace blink {
 template <typename T>
 class RefCountedDartWrappable : public fml::RefCountedThreadSafe<T> {
  public:
-  virtual void RetainDartWrappableReference() const override {
+  virtual void RetainDartWrappableReference() const {
     fml::RefCountedThreadSafe<T>::AddRef();
   }
 
-  virtual void ReleaseDartWrappableReference() const override {
+  virtual void ReleaseDartWrappableReference() const {
     fml::RefCountedThreadSafe<T>::Release();
   }
 };

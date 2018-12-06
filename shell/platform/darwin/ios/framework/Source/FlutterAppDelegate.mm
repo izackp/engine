@@ -140,34 +140,6 @@
                       restorationHandler:restorationHandler];
 }
 
-#pragma mark - FlutterPluginRegistry methods. All delegating to the rootViewController
-
-- (NSObject<FlutterPluginRegistrar>*)registrarForPlugin:(NSString*)pluginKey {
-  UIViewController* rootViewController = _window.rootViewController;
-  if ([rootViewController isKindOfClass:[FlutterViewController class]]) {
-    return
-        [[(FlutterViewController*)rootViewController pluginRegistry] registrarForPlugin:pluginKey];
-  }
-  return nil;
-}
-
-- (BOOL)hasPlugin:(NSString*)pluginKey {
-  UIViewController* rootViewController = _window.rootViewController;
-  if ([rootViewController isKindOfClass:[FlutterViewController class]]) {
-    return [[(FlutterViewController*)rootViewController pluginRegistry] hasPlugin:pluginKey];
-  }
-  return false;
-}
-
-- (NSObject*)valuePublishedByPlugin:(NSString*)pluginKey {
-  UIViewController* rootViewController = _window.rootViewController;
-  if ([rootViewController isKindOfClass:[FlutterViewController class]]) {
-    return [[(FlutterViewController*)rootViewController pluginRegistry]
-        valuePublishedByPlugin:pluginKey];
-  }
-  return nil;
-}
-
 #pragma mark - FlutterAppLifeCycleProvider methods
 
 - (void)addApplicationLifeCycleDelegate:(NSObject<FlutterPlugin>*)delegate {

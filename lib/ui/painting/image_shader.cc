@@ -37,6 +37,7 @@ char* ImageShader::initWithImage(CanvasImage* image,
   }
   set_shader(UIDartState::CreateGPUObject(
       image->image()->makeShader(tmx, tmy, &matrix)));
+  return nullptr;
 }
 
 ImageShader::ImageShader() = default;

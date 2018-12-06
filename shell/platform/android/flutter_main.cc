@@ -16,7 +16,6 @@
 #include "flutter/fml/paths.h"
 #include "flutter/fml/platform/android/jni_util.h"
 #include "flutter/lib/ui/plugins/callback_cache.h"
-#include "flutter/runtime/dart_vm.h"
 #include "flutter/runtime/start_up.h"
 #include "flutter/shell/common/shell.h"
 #include "flutter/shell/common/switches.h"
@@ -62,17 +61,6 @@ void FlutterMain::Init(JNIEnv* env,
   blink::DartCallbackCache::SetCachePath(
       fml::jni::JavaStringToString(env, appStoragePath));
   blink::DartCallbackCache::LoadCacheFromDisk();
-
-  if (!blink::DartVM::IsRunningPrecompiledCode()) {
-    // Check to see if the appropriate kernel files are present and configure
-    // settings accordingly.
-    auto application_kernel_path =
-        fml::paths::JoinPaths({settings.assets_path, "kernel_blob.bin"});
-
-    if (fml::IsFile(application_kernel_path)) {
-      settings.application_kernel_asset = application_kernel_path;
-    }
-  }
 
   settings.task_observer_add = [](intptr_t key, fml::closure callback) {
     fml::MessageLoop::GetCurrent().AddTaskObserver(key, std::move(callback));

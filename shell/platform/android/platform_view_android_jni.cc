@@ -201,9 +201,6 @@ static void SurfaceDestroyed(JNIEnv* env, jobject jcaller, jlong shell_holder) {
 
 std::unique_ptr<IsolateConfiguration> CreateIsolateConfiguration(
     const blink::AssetManager& asset_manager) {
-  if (blink::DartVM::IsRunningPrecompiledCode()) {
-    return IsolateConfiguration::CreateForAppSnapshot();
-  }
 
   const auto configuration_from_blob =
       [&asset_manager](const std::string& snapshot_name)

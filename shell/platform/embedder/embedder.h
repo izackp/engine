@@ -166,10 +166,6 @@ typedef struct {
   // after the call to |FlutterEngineRun| returns. The string must be NULL
   // terminated.
   const char* packages_path;
-  // The path to the icudtl.dat file for the project. The string can be
-  // collected after the call to |FlutterEngineRun| returns. The string must
-  // be NULL terminated.
-  const char* icu_data_path;
   // The command line argument count used to initialize the project.
   int command_line_argc;
   // The command line arguments used to initialize the project. The strings can

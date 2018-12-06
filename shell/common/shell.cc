@@ -25,9 +25,7 @@
 #include "flutter/shell/common/skia_event_tracer_impl.h"
 #include "flutter/shell/common/switches.h"
 #include "flutter/shell/common/vsync_waiter.h"
-#include "third_party/dart/runtime/include/dart_tools_api.h"
 #include "third_party/skia/include/core/SkGraphics.h"
-#include "third_party/tonic/common/log.h"
 
 #ifdef ERROR
 #undef ERROR
@@ -147,7 +145,7 @@ std::unique_ptr<Shell> Shell::CreateShellOnPlatformThread(
 
 static void RecordStartupTimestamp() {
   if (blink::engine_main_enter_ts == 0) {
-    blink::engine_main_enter_ts = Dart_TimelineGetMicros();
+    blink::engine_main_enter_ts = fml::TimePoint::Now().ToEpochDelta().ToMicroseconds();
   }
 }
 
@@ -169,9 +167,6 @@ static void PerformInitializationTasks(const blink::Settings& settings) {
       fml::SetLogSettings(log_settings);
     }
 
-    tonic::SetLogHandler(
-        [](const char* message) { FML_LOG(ERROR) << message; });
-
     if (settings.trace_skia) {
       InitSkiaEventTracer(settings.trace_skia);
     }
@@ -181,27 +176,7 @@ static void PerformInitializationTasks(const blink::Settings& settings) {
     } else {
       FML_DLOG(INFO) << "Skia deterministic rendering is enabled.";
     }
-
-    if (settings.icu_data_path.size() != 0) {
-      fml::icu::InitializeICU(settings.icu_data_path);
-    } else {
-      FML_DLOG(WARNING) << "Skipping ICU initialization in the shell.";
-    }
   });
-}
-
-std::unique_ptr<Shell> Shell::Create(
-    blink::TaskRunners task_runners,
-    blink::Settings settings,
-    Shell::CreateCallback<PlatformView> on_create_platform_view,
-    Shell::CreateCallback<Rasterizer> on_create_rasterizer) {
-  PerformInitializationTasks(settings);
-
-  return Shell::Create(std::move(task_runners),             //
-                       std::move(settings),                 //
-                       std::move(on_create_platform_view),  //
-                       std::move(on_create_rasterizer)      //
-  );
 }
 
 std::unique_ptr<Shell> Shell::Create(

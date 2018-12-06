@@ -19,13 +19,6 @@ struct ImageInfo {
   size_t row_bytes;
 };
 
-//image_info can be null. Null seems to imply that the data is compressed (png)
-char* InstantiateImageCodec(
-  const uint8_t* list, 
-  int count, 
-  std::unique_ptr<ImageInfo> image_info, 
-  void (*callback)(fml::RefPtr<Codec> codec));
-
 // A handle to an SkCodec object.
 //
 // Doesn't mirror SkCodec's API but provides a simple sequential access API.
@@ -87,6 +80,13 @@ class SingleFrameCodec : public Codec {
   FML_FRIEND_MAKE_REF_COUNTED(SingleFrameCodec);
   FML_FRIEND_REF_COUNTED_THREAD_SAFE(SingleFrameCodec);
 };
+
+//image_info can be null. Null seems to imply that the data is compressed (png)
+char* InstantiateImageCodec(
+  const uint8_t* list, 
+  int count, 
+  std::unique_ptr<ImageInfo> image_info, 
+  void (*callback)(fml::RefPtr<Codec> codec));
 
 }  // namespace blink
 

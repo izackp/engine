@@ -20,7 +20,7 @@ std::string Settings::ToString() const {
   stream << "application_library_path: " << application_library_path
          << std::endl;
  // stream << "main_dart_file_path: " << main_dart_file_path << std::endl;
-  stream << "packages_file_path: " << packages_file_path << std::endl;
+ // stream << "packages_file_path: " << packages_file_path << std::endl;
   stream << "temp_directory_path: " << temp_directory_path << std::endl;
   /*
   stream << "dart_flags:" << std::endl;
@@ -40,7 +40,6 @@ std::string Settings::ToString() const {
   stream << "enable_software_rendering: " << enable_software_rendering
          << std::endl;
   stream << "log_tag: " << log_tag << std::endl;
-  stream << "icu_data_path: " << icu_data_path << std::endl;
   stream << "assets_dir: " << assets_dir << std::endl;
   stream << "assets_path: " << assets_path << std::endl;
   return stream.str();

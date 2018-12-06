@@ -3,42 +3,11 @@
 # found in the LICENSE file.
 
 declare_args() {
-  shell_engine_version = ""
+  shell_engine_version = "0"
 
-  shell_skia_version = ""
+  shell_skia_version = "0"
 
-  shell_dart_version = ""
+  shell_dart_version = "0"
 }
-
-if (shell_engine_version == "") {
-  shell_engine_version_lines =
-      exec_script("$flutter_root/build/git_revision.py",
-                  [
-                    "--repository",
-                    rebase_path(flutter_root, "", flutter_root),
-                  ],
-                  "list lines")
-  shell_engine_version = shell_engine_version_lines[0]
-}
-
-if (shell_skia_version == "") {
-  shell_skia_version_lines =
-      exec_script("$flutter_root/build/git_revision.py",
-                  [
-                    "--repository",
-                    rebase_path("//third_party/skia", "", flutter_root),
-                  ],
-                  "list lines")
-  shell_skia_version = shell_skia_version_lines[0]
-}
-
-if (shell_dart_version == "") {
-  shell_dart_version_lines =
-      exec_script("$flutter_root/build/git_revision.py",
-                  [
-                    "--repository",
-                    rebase_path("//third_party/dart", "", flutter_root),
-                  ],
-                  "list lines")
-  shell_dart_version = shell_dart_version_lines[0]
-}
+# Deleted version assignment; refer to git history. 
+# Was getting KeyError: 'GYP_MSVS_OVERRIDE_PATH' executing the git_revision.py script

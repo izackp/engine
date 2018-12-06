@@ -8,9 +8,9 @@
 #include "flutter/fml/trace_event.h"
 
 #include <vector>
+#include <string.h>
 
 #include "flutter/fml/logging.h"
-#include "third_party/dart/runtime/include/dart_tools_api.h"
 #include "third_party/skia/include/utils/SkEventTracer.h"
 #include "third_party/skia/include/utils/SkTraceEventPhase.h"
 
@@ -96,9 +96,6 @@ bool enableSkiaTracingCallback(const char* method,
 
 void InitSkiaEventTracer(bool enabled) {
   skia::FlutterEventTracer* tracer = new skia::FlutterEventTracer(enabled);
-  Dart_RegisterRootServiceRequestCallback("_flutter.enableSkiaTracing",
-                                          skia::enableSkiaTracingCallback,
-                                          static_cast<void*>(tracer));
   // Initialize the binding to Skia's tracing events. Skia will
   // take ownership of and clean up the memory allocated here.
   SkEventTracer::SetInstance(tracer);

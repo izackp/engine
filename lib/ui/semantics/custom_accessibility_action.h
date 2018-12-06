@@ -4,6 +4,7 @@
 
 #ifndef FLUTTER_LIB_UI_SEMANTICS_CUSTOM_ACCESSIBILITY_ACTION_H_
 #define FLUTTER_LIB_UI_SEMANTICS_CUSTOM_ACCESSIBILITY_ACTION_H_
+#include <unordered_map>
 
 namespace blink {
 

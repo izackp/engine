@@ -16,7 +16,7 @@ class Shader : public RefCountedDartWrappable<Shader> {
   FML_FRIEND_MAKE_REF_COUNTED(Shader);
 
  public:
-  ~Shader() override;
+  ~Shader();
 
   sk_sp<SkShader> shader() { return shader_.get(); }
 

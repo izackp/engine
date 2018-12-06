@@ -258,11 +258,6 @@ FlutterResult FlutterEngineRun(size_t version,
     return kInvalidArguments;
   }
 
-  std::string icu_data_path;
-  if (SAFE_ACCESS(args, icu_data_path, nullptr) != nullptr) {
-    icu_data_path = SAFE_ACCESS(args, icu_data_path, nullptr);
-  }
-
   fml::CommandLine command_line;
   if (SAFE_ACCESS(args, command_line_argc, 0) != 0 &&
       SAFE_ACCESS(args, command_line_argv, nullptr) != nullptr) {
@@ -272,20 +267,9 @@ FlutterResult FlutterEngineRun(size_t version,
   }
 
   blink::Settings settings = shell::SettingsFromCommandLine(command_line);
-  settings.icu_data_path = icu_data_path;
   settings.assets_path = args->assets_path;
 
-  // Check whether the assets path contains Dart 2 kernel assets.
-  const std::string kApplicationKernelSnapshotFileName = "kernel_blob.bin";
-  std::string application_kernel_path = fml::paths::JoinPaths(
-      {settings.assets_path, kApplicationKernelSnapshotFileName});
-  if (fml::IsFile(application_kernel_path)) {
-    // Run from a kernel snapshot.
-    settings.application_kernel_asset = kApplicationKernelSnapshotFileName;
-  } else {
-    // Run from a main Dart file.
-    settings.packages_file_path = args->packages_path;
-  }
+  //settings.packages_file_path = args->packages_path;
 
   settings.task_observer_add = [](intptr_t key, fml::closure callback) {
     fml::MessageLoop::GetCurrent().AddTaskObserver(key, std::move(callback));

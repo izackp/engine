@@ -18,7 +18,7 @@ class SceneHost : public RefCountedDartWrappable<SceneHost> {
  public:
   static fml::RefPtr<SceneHost> create();
 
-  ~SceneHost() override;
+  ~SceneHost();
 
   void dispose();
 

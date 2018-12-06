@@ -110,11 +110,6 @@ static std::string CreateThreadLabel() {
   // Figure out the settings from the command line arguments.
   auto settings = shell::SettingsFromCommandLine(shell::CommandLineFromNSProcessInfo());
 
-  if (settings.icu_data_path.size() == 0) {
-    settings.icu_data_path =
-        [[NSBundle mainBundle] pathForResource:@"icudtl.dat" ofType:@""].UTF8String;
-  }
-
   settings.task_observer_add = [](intptr_t key, fml::closure callback) {
     fml::MessageLoop::GetCurrent().AddTaskObserver(key, std::move(callback));
   };

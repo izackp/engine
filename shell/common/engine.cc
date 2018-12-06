@@ -14,7 +14,6 @@
 #include "flutter/fml/paths.h"
 #include "flutter/fml/trace_event.h"
 #include "flutter/fml/unique_fd.h"
-#include "flutter/lib/snapshot/snapshot.h"
 #include "flutter/lib/ui/text/font_collection.h"
 #include "flutter/shell/common/animator.h"
 #include "flutter/shell/common/platform_view.h"
@@ -101,11 +100,6 @@ bool Engine::Restart(RunConfiguration configuration) {
 bool Engine::Run(RunConfiguration configuration) {
   if (!configuration.IsValid()) {
     FML_LOG(ERROR) << "Engine run configuration was invalid.";
-    return false;
-  }
-
-  if (!PrepareAndLaunchIsolate(std::move(configuration))) {
-    FML_LOG(ERROR) << "Engine not prepare and launch isolate.";
     return false;
   }
 

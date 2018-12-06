@@ -100,11 +100,11 @@ void ParagraphBuilder::RegisterNatives(tonic::DartLibraryNatives* natives) {
        FOR_EACH_BINDING(DART_REGISTER_NATIVE)});
 }*/
 
-fml::RefPtr<ParagraphBuilder> ParagraphBuilder::create(const txt::TextStyle& style) {
+fml::RefPtr<ParagraphBuilder> ParagraphBuilder::create(const txt::ParagraphStyle& style) {
   return fml::MakeRefCounted<ParagraphBuilder>(style);
 }
 
-ParagraphBuilder::ParagraphBuilder(const txt::TextStyle& style) {
+ParagraphBuilder::ParagraphBuilder(const txt::ParagraphStyle& style) {
   FontCollection& font_collection =
       UIDartState::Current()->window()->client()->GetFontCollection();
   m_paragraphBuilder = std::make_unique<txt::ParagraphBuilder>(

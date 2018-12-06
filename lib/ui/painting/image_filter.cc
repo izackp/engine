@@ -31,7 +31,7 @@ void ImageFilter::RegisterNatives(tonic::DartLibraryNatives* natives) {
 }
 */
 fml::RefPtr<ImageFilter> ImageFilter::Create() {
-  fml::MakeRefCounted<ImageFilter>();
+  return fml::MakeRefCounted<ImageFilter>();
 }
 
 ImageFilter::ImageFilter() {}

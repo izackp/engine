@@ -50,7 +50,6 @@ class Window final {
 
   const ViewportMetrics& viewport_metrics() { return viewport_metrics_; }
 
-  void DidCreateIsolate();
   void UpdateWindowMetrics(const ViewportMetrics& metrics);
   void UpdateLocale(const std::string& language_code,
                     const std::string& country_code);
