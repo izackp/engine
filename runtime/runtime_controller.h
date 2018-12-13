@@ -1,4 +1,4 @@
-// Copyright 2015 The Chromium Authors. All rights reserved.
+// Copyright 2013 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,6 +6,7 @@
 #define FLUTTER_RUNTIME_RUNTIME_CONTROLLER_H_
 
 #include <memory>
+#include <vector>
 
 #include "flutter/common/task_runners.h"
 #include "flutter/flow/layers/layer_tree.h"
@@ -14,6 +15,8 @@
 #include "flutter/lib/ui/ui_dart_state.h"
 #include "flutter/lib/ui/window/pointer_data_packet.h"
 #include "flutter/lib/ui/window/window.h"
+#include "rapidjson/document.h"
+#include "rapidjson/stringbuffer.h"
 
 namespace blink {
 class Scene;
@@ -25,17 +28,17 @@ class RuntimeController final : public WindowClient {
  public:
   RuntimeController(RuntimeDelegate& client,
                     TaskRunners task_runners,
+                    fml::WeakPtr<SnapshotDelegate> snapshot_delegate,
                     fml::WeakPtr<GrContext> resource_context,
                     fml::RefPtr<flow::SkiaUnrefQueue> unref_queue);
 
-  ~RuntimeController();
+  ~RuntimeController() override;
 
   std::unique_ptr<RuntimeController> Clone() const;
 
   bool SetViewportMetrics(const ViewportMetrics& metrics);
 
-  bool SetLocale(const std::string& language_code,
-                 const std::string& country_code);
+  bool SetLocales(const std::vector<std::string>& locale_data);
 
   bool SetUserSettingsData(const std::string& data);
 
@@ -58,10 +61,33 @@ class RuntimeController final : public WindowClient {
                                std::vector<uint8_t> args);
 
  private:
+  struct Locale {
+    Locale(std::string language_code_,
+           std::string country_code_,
+           std::string script_code_,
+           std::string variant_code_);
+
+    ~Locale();
+
+    std::string language_code;
+    std::string country_code;
+    std::string script_code;
+    std::string variant_code;
+  };
+
   struct WindowData {
+    WindowData();
+
+    WindowData(const WindowData& other);
+
+    ~WindowData();
+
     ViewportMetrics viewport_metrics;
     std::string language_code;
     std::string country_code;
+    std::string script_code;
+    std::string variant_code;
+    std::vector<std::string> locale_data;
     std::string user_settings_data = "{}";
     bool semantics_enabled = false;
     bool assistive_technology_enabled = false;
@@ -70,6 +96,7 @@ class RuntimeController final : public WindowClient {
 
   RuntimeDelegate& client_;
   TaskRunners task_runners_;
+  fml::WeakPtr<SnapshotDelegate> snapshot_delegate_;
   fml::WeakPtr<GrContext> resource_context_;
   fml::RefPtr<flow::SkiaUnrefQueue> unref_queue_;
   WindowData window_data_;
@@ -77,6 +104,7 @@ class RuntimeController final : public WindowClient {
 
   RuntimeController(RuntimeDelegate& client,
                     TaskRunners task_runners,
+                    fml::WeakPtr<SnapshotDelegate> snapshot_delegate,
                     fml::WeakPtr<GrContext> resource_context,
                     fml::RefPtr<flow::SkiaUnrefQueue> unref_queue,
                     WindowData data);
@@ -102,6 +130,10 @@ class RuntimeController final : public WindowClient {
 
   // |blink::WindowClient|
   FontCollection& GetFontCollection() override;
+
+  // |blink::WindowClient|
+  void UpdateIsolateDescription(const std::string isolate_name,
+                                int64_t isolate_port) override;
 
   FML_DISALLOW_COPY_AND_ASSIGN(RuntimeController);
 };

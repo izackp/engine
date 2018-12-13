@@ -1,4 +1,4 @@
-// Copyright 2015 The Chromium Authors. All rights reserved.
+// Copyright 2013 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,6 +6,7 @@
 
 #include "flutter/common/settings.h"
 #include "flutter/common/task_runners.h"
+#include "flutter/fml/logging.h"
 #include "flutter/fml/task_runner.h"
 #include "flutter/lib/ui/text/font_collection.h"
 #include "flutter/lib/ui/ui_dart_state.h"
@@ -37,6 +38,7 @@ const int tsHeightIndex = 12;
 const int tsLocaleIndex = 13;
 const int tsBackgroundIndex = 14; 
 const int tsForegroundIndex = 15;
+const int tsTextShadowsIndex = 16;
 
 const int tsColorMask = 1 << tsColorIndex;
 const int tsTextDecorationMask = 1 << tsTextDecorationIndex;
@@ -53,6 +55,7 @@ const int tsHeightMask = 1 << tsHeightIndex;
 const int tsLocaleMask = 1 << tsLocaleIndex;
 const int tsBackgroundMask = 1 << tsBackgroundIndex;
 const int tsForegroundMask = 1 << tsForegroundIndex;
+const int tsTextShadowsMask = 1 << tsTextShadowsIndex;
 
 // ParagraphStyle
 
@@ -77,6 +80,16 @@ const int psFontSizeMask = 1 << psFontSizeIndex;
 const int psLineHeightMask = 1 << psLineHeightIndex;
 const int psEllipsisMask = 1 << psEllipsisIndex;
 const int psLocaleMask = 1 << psLocaleIndex;
+
+// TextShadows decoding
+
+constexpr uint32_t kColorDefault = 0xFF000000;
+constexpr uint32_t kBytesPerShadow = 16;
+constexpr uint32_t kShadowPropertiesCount = 4;
+constexpr uint32_t kColorOffset = 0;
+constexpr uint32_t kXOffset = 1;
+constexpr uint32_t kYOffset = 2;
+constexpr uint32_t kBlurOffset = 3;
 
 }  // namespace
 /*
@@ -114,11 +127,6 @@ ParagraphBuilder::ParagraphBuilder(const txt::ParagraphStyle& style) {
 ParagraphBuilder::~ParagraphBuilder() = default;
 
 void ParagraphBuilder::pushStyle(const txt::TextStyle& style) {
-  // Set to use the properties of the previous style if the property is not
-  // explicitly given.
-  //txt::TextStyle style = m_paragraphBuilder->PeekStyle();
-  //TODO: Merge with previous style
-
   m_paragraphBuilder->PushStyle(style);
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2015 The Chromium Authors. All rights reserved.
+// Copyright 2013 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -22,14 +22,11 @@
 #include "flutter/fml/unique_fd.h"
 #include "flutter/runtime/start_up.h"
 #include "flutter/shell/common/engine.h"
+#include "flutter/shell/common/persistent_cache.h"
 #include "flutter/shell/common/skia_event_tracer_impl.h"
 #include "flutter/shell/common/switches.h"
 #include "flutter/shell/common/vsync_waiter.h"
 #include "third_party/skia/include/core/SkGraphics.h"
-
-#ifdef ERROR
-#undef ERROR
-#endif
 
 namespace shell {
 
@@ -86,29 +83,34 @@ std::unique_ptr<Shell> Shell::CreateShellOnPlatformThread(
   // Create the rasterizer on the GPU thread.
   fml::AutoResetWaitableEvent gpu_latch;
   std::unique_ptr<Rasterizer> rasterizer;
+  fml::WeakPtr<blink::SnapshotDelegate> snapshot_delegate;
   fml::TaskRunner::RunNowOrPostTask(
       task_runners.GetGPUTaskRunner(), [&gpu_latch,            //
                                         &rasterizer,           //
                                         on_create_rasterizer,  //
-                                        shell = shell.get()    //
+                                        shell = shell.get(),   //
+                                        &snapshot_delegate     //
   ]() {
         if (auto new_rasterizer = on_create_rasterizer(*shell)) {
           rasterizer = std::move(new_rasterizer);
+          snapshot_delegate = rasterizer->GetSnapshotDelegate();
         }
         gpu_latch.Signal();
       });
+
+  gpu_latch.Wait();
 
   // Create the engine on the UI thread.
   fml::AutoResetWaitableEvent ui_latch;
   std::unique_ptr<Engine> engine;
   fml::TaskRunner::RunNowOrPostTask(
       shell->GetTaskRunners().GetUITaskRunner(),
-      fml::MakeCopyable([&ui_latch,                                       //
-                         &engine,                                         //
-                         shell = shell.get(),                             //
-                         vsync_waiter = std::move(vsync_waiter),          //
-                         resource_context = std::move(resource_context),  //
-                         unref_queue = std::move(unref_queue)             //
+      fml::MakeCopyable([&ui_latch,                                         //
+                         &engine,                                           //
+                         shell = shell.get(),                               //
+                         vsync_waiter = std::move(vsync_waiter),            //
+                         snapshot_delegate = std::move(snapshot_delegate),  //
+                         resource_context = std::move(resource_context),    //
   ]() mutable {
         const auto& task_runners = shell->GetTaskRunners();
 
@@ -121,13 +123,13 @@ std::unique_ptr<Shell> Shell::CreateShellOnPlatformThread(
                                           task_runners,                 //
                                           shell->GetSettings(),         //
                                           std::move(animator),          //
+                                          std::move(snapshot_delegate), //
                                           std::move(resource_context),  //
                                           std::move(unref_queue)        //
         );
         ui_latch.Signal();
       }));
 
-  gpu_latch.Wait();
   ui_latch.Wait();
   // We are already on the platform thread. So there is no platform latch to
   // wait on.
@@ -249,6 +251,8 @@ Shell::Shell(blink::TaskRunners task_runners, blink::Settings settings)
 }
 
 Shell::~Shell() {
+  PersistentCache::GetCacheForProcess()->RemoveWorkerTaskRunner(
+      task_runners_.GetIOTaskRunner());
 
   fml::AutoResetWaitableEvent ui_latch, gpu_latch, platform_latch, io_latch;
 
@@ -319,6 +323,8 @@ bool Shell::Setup(std::unique_ptr<PlatformView> platform_view,
 
   is_setup_ = true;
 
+  PersistentCache::GetCacheForProcess()->AddWorkerTaskRunner(
+      task_runners_.GetIOTaskRunner());
   return true;
 }
 
@@ -524,7 +530,7 @@ void Shell::OnPlatformViewRegisterTexture(
   task_runners_.GetGPUTaskRunner()->PostTask(
       [rasterizer = rasterizer_->GetWeakPtr(), texture] {
         if (rasterizer) {
-          if (auto registry = rasterizer->GetTextureRegistry()) {
+          if (auto* registry = rasterizer->GetTextureRegistry()) {
             registry->RegisterTexture(texture);
           }
         }
@@ -539,7 +545,7 @@ void Shell::OnPlatformViewUnregisterTexture(int64_t texture_id) {
   task_runners_.GetGPUTaskRunner()->PostTask(
       [rasterizer = rasterizer_->GetWeakPtr(), texture_id]() {
         if (rasterizer) {
-          if (auto registry = rasterizer->GetTextureRegistry()) {
+          if (auto* registry = rasterizer->GetTextureRegistry()) {
             registry->UnregisterTexture(texture_id);
           }
         }
@@ -554,7 +560,7 @@ void Shell::OnPlatformViewMarkTextureFrameAvailable(int64_t texture_id) {
   // Tell the rasterizer that one of its textures has a new frame available.
   task_runners_.GetGPUTaskRunner()->PostTask(
       [rasterizer = rasterizer_->GetWeakPtr(), texture_id]() {
-        auto registry = rasterizer->GetTextureRegistry();
+        auto* registry = rasterizer->GetTextureRegistry();
 
         if (!registry) {
           return;
@@ -683,6 +689,15 @@ void Shell::OnPreEngineRestart() {
   // This is blocking as any embedded platform views has to be flushed before
   // we re-run the Dart code.
   latch.Wait();
+}
+
+// |shell::Engine::Delegate|
+void Shell::UpdateIsolateDescription(const std::string isolate_name,
+                                     int64_t isolate_port) {
+  if (auto vm = blink::DartVM::ForProcessIfInitialized()) {
+    Handler::Description description(isolate_port, isolate_name);
+    vm->GetServiceProtocol().SetHandlerDescription(this, description);
+  }
 }
 
 // |blink::ServiceProtocol::Handler|
@@ -815,13 +830,14 @@ bool Shell::OnServiceProtocolRunInView(
       fml::paths::FromURI(params.at("assetDirectory").ToString());
 
   auto main_script_file_mapping =
-      std::make_unique<fml::FileMapping>(main_script_path, false);
-      
+      std::make_unique<fml::FileMapping>(fml::OpenFile(
+          main_script_path.c_str(), false, fml::FilePermission::kRead));
+
   RunConfiguration configuration = RunConfiguration();
 
   configuration.AddAssetResolver(
-      std::make_unique<blink::DirectoryAssetBundle>(fml::OpenFile(
-          asset_directory_path.c_str(), fml::OpenPermission::kRead, true)));
+      std::make_unique<blink::DirectoryAssetBundle>(fml::OpenDirectory(
+          asset_directory_path.c_str(), false, fml::FilePermission::kRead)));
 
   auto& allocator = response.GetAllocator();
   response.SetObject();
@@ -874,11 +890,11 @@ bool Shell::OnServiceProtocolSetAssetBundlePath(
   auto& allocator = response.GetAllocator();
   response.SetObject();
 
-  auto asset_manager = fml::MakeRefCounted<blink::AssetManager>();
+  auto asset_manager = std::make_shared<blink::AssetManager>();
 
   asset_manager->PushFront(std::make_unique<blink::DirectoryAssetBundle>(
-      fml::OpenFile(params.at("assetDirectory").ToString().c_str(),
-                    fml::OpenPermission::kRead, true)));
+      fml::OpenDirectory(params.at("assetDirectory").ToString().c_str(), false,
+                         fml::FilePermission::kRead)));
 
   if (engine_->UpdateAssetManager(std::move(asset_manager))) {
     response.AddMember("type", "Success", allocator);

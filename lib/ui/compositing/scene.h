@@ -1,4 +1,4 @@
-// Copyright 2015 The Chromium Authors. All rights reserved.
+// Copyright 2013 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -22,7 +22,7 @@ class Scene : public RefCountedDartWrappable<Scene> {
 
  public:
   ~Scene();
-  static fml::RefPtr<Scene> create(std::unique_ptr<flow::Layer> rootLayer,
+  static fml::RefPtr<Scene> create(std::shared_ptr<flow::Layer> rootLayer,
                                    uint32_t rasterizerTracingThreshold,
                                    bool checkerboardRasterCacheImages,
                                    bool checkerboardOffscreenLayers);
@@ -36,7 +36,7 @@ class Scene : public RefCountedDartWrappable<Scene> {
   void dispose();
 
  private:
-  explicit Scene(std::unique_ptr<flow::Layer> rootLayer,
+  explicit Scene(std::shared_ptr<flow::Layer> rootLayer,
                  uint32_t rasterizerTracingThreshold,
                  bool checkerboardRasterCacheImages,
                  bool checkerboardOffscreenLayers);

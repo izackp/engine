@@ -1,4 +1,4 @@
-// Copyright 2015 The Chromium Authors. All rights reserved.
+// Copyright 2013 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -29,9 +29,70 @@ void UpdateSemantics(SemanticsUpdate* update) {
   UIDartState::Current()->window()->client()->UpdateSemantics(update);
 }
 
+<<<<<<< HEAD
 void RespondToPlatformMessage(int response_id,
                               const std::vector<uint8_t>& data) {
   UIDartState::Current()->window()->CompletePlatformMessageResponse(
+=======
+void SetIsolateDebugName(Dart_NativeArguments args) {
+  Dart_Handle exception = nullptr;
+  const std::string name =
+      tonic::DartConverter<std::string>::FromArguments(args, 1, exception);
+  if (exception) {
+    Dart_ThrowException(exception);
+    return;
+  }
+  UIDartState::Current()->SetDebugName(name);
+}
+
+Dart_Handle SendPlatformMessage(Dart_Handle window,
+                                const std::string& name,
+                                Dart_Handle callback,
+                                const tonic::DartByteData& data) {
+  UIDartState* dart_state = UIDartState::Current();
+
+  if (!dart_state->window()) {
+    // Must release the TypedData buffer before allocating other Dart objects.
+    data.Release();
+    return ToDart("Platform messages can only be sent from the main isolate");
+  }
+
+  fml::RefPtr<PlatformMessageResponse> response;
+  if (!Dart_IsNull(callback)) {
+    response = fml::MakeRefCounted<PlatformMessageResponseDart>(
+        tonic::DartPersistentValue(dart_state, callback),
+        dart_state->GetTaskRunners().GetUITaskRunner());
+  }
+  if (Dart_IsNull(data.dart_handle())) {
+    dart_state->window()->client()->HandlePlatformMessage(
+        fml::MakeRefCounted<PlatformMessage>(name, response));
+  } else {
+    const uint8_t* buffer = static_cast<const uint8_t*>(data.data());
+
+    dart_state->window()->client()->HandlePlatformMessage(
+        fml::MakeRefCounted<PlatformMessage>(
+            name, std::vector<uint8_t>(buffer, buffer + data.length_in_bytes()),
+            response));
+  }
+
+  return Dart_Null();
+}
+
+void _SendPlatformMessage(Dart_NativeArguments args) {
+  tonic::DartCallStatic(&SendPlatformMessage, args);
+}
+
+void RespondToPlatformMessage(Dart_Handle window,
+                              int response_id,
+                              const tonic::DartByteData& data) {
+  if (Dart_IsNull(data.dart_handle())) {
+    UIDartState::Current()->window()->CompletePlatformMessageEmptyResponse(
+        response_id);
+  } else {
+    // TODO(engine): Avoid this copy.
+    const uint8_t* buffer = static_cast<const uint8_t*>(data.data());
+    UIDartState::Current()->window()->CompletePlatformMessageResponse(
+>>>>>>> master
         response_id,
         data);
 }
@@ -49,16 +110,11 @@ void Window::UpdateWindowMetrics(const ViewportMetrics& metrics) {
   viewport_metrics_ = metrics;
 }
 
-void Window::UpdateLocale(const std::string& language_code,
-                          const std::string& country_code) {
+void Window::UpdateLocales(const std::vector<std::string>& locales) {
 
 }
 
 void Window::UpdateUserSettingsData(const std::string& data) {
-
-}
-
-void Window::UpdateSemanticsEnabled(bool enabled) {
 
 }
 
@@ -123,6 +179,7 @@ void Window::RegisterNatives(tonic::DartLibraryNatives* natives) {
       {"Window_respondToPlatformMessage", _RespondToPlatformMessage, 3, true},
       {"Window_render", Render, 2, true},
       {"Window_updateSemantics", UpdateSemantics, 2, true},
+      {"Window_setIsolateDebugName", SetIsolateDebugName, 2, true},
   });
 }
 */

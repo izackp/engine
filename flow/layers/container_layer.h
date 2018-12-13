@@ -1,4 +1,4 @@
-// Copyright 2015 The Chromium Authors. All rights reserved.
+// Copyright 2013 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -15,7 +15,7 @@ class ContainerLayer : public Layer {
   ContainerLayer();
   ~ContainerLayer() override;
 
-  void Add(std::unique_ptr<Layer> layer);
+  void Add(std::shared_ptr<Layer> layer);
 
   void Preroll(PrerollContext* context, const SkMatrix& matrix) override;
 
@@ -28,7 +28,7 @@ class ContainerLayer : public Layer {
   void PaintChildren(PaintContext& context) const;
 
  private:
-  std::vector<std::unique_ptr<Layer>> layers_;
+  std::vector<std::shared_ptr<Layer>> layers_;
 
   FML_DISALLOW_COPY_AND_ASSIGN(ContainerLayer);
 };

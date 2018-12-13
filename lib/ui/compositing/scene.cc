@@ -1,4 +1,4 @@
-// Copyright 2015 The Chromium Authors. All rights reserved.
+// Copyright 2013 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -20,7 +20,7 @@ IMPLEMENT_WRAPPERTYPEINFO(ui, Scene);
 
 DART_BIND_ALL(Scene, FOR_EACH_BINDING)*/
 
-fml::RefPtr<Scene> Scene::create(std::unique_ptr<flow::Layer> rootLayer,
+fml::RefPtr<Scene> Scene::create(std::shared_ptr<flow::Layer> rootLayer,
                                  uint32_t rasterizerTracingThreshold,
                                  bool checkerboardRasterCacheImages,
                                  bool checkerboardOffscreenLayers) {
@@ -29,7 +29,7 @@ fml::RefPtr<Scene> Scene::create(std::unique_ptr<flow::Layer> rootLayer,
       checkerboardRasterCacheImages, checkerboardOffscreenLayers);
 }
 
-Scene::Scene(std::unique_ptr<flow::Layer> rootLayer,
+Scene::Scene(std::shared_ptr<flow::Layer> rootLayer,
              uint32_t rasterizerTracingThreshold,
              bool checkerboardRasterCacheImages,
              bool checkerboardOffscreenLayers)
@@ -44,46 +44,6 @@ Scene::Scene(std::unique_ptr<flow::Layer> rootLayer,
 Scene::~Scene() {}
 
 void Scene::dispose() {
-}
-
-static sk_sp<SkImage> CreateSceneSnapshot(GrContext* context,
-                                          sk_sp<SkPicture> picture,
-                                          const SkSize& size) {
-  TRACE_EVENT0("flutter", "CreateSceneSnapshot");
-  auto image_info =
-      SkImageInfo::MakeN32Premul(SkISize::Make(size.width(), size.height()));
-
-  sk_sp<SkSurface> surface;
-
-  if (context) {
-    surface = SkSurface::MakeRenderTarget(context, SkBudgeted::kNo, image_info);
-  }
-
-  if (!surface) {
-    surface = SkSurface::MakeRaster(image_info);
-  }
-
-  if (!surface) {
-    return nullptr;
-  }
-
-  auto canvas = surface->getCanvas();
-
-  if (!canvas) {
-    return nullptr;
-  }
-
-  if (picture) {
-    canvas->drawPicture(picture.get());
-  }
-
-  auto snapshot = surface->makeImageSnapshot();
-
-  if (!snapshot) {
-    return nullptr;
-  }
-
-  return snapshot->makeRasterImage();
 }
 
 char* Scene::toImage(uint32_t width,
@@ -102,63 +62,60 @@ char* Scene::toImage(uint32_t width,
     return "Image dimensions for scene were invalid.";
   }
 
-  auto dart_state = UIDartState::Current();
+  auto* dart_state = UIDartState::Current();
+  auto unref_queue = dart_state->GetSkiaUnrefQueue();
+  auto ui_task_runner = dart_state->GetTaskRunners().GetUITaskRunner();
+  auto gpu_task_runner = dart_state->GetTaskRunners().GetGPUTaskRunner();
+  auto snapshot_delegate = dart_state->GetSnapshotDelegate();
 
   // We can't create an image on this task runner because we don't have a
   // graphics context. Even if we did, it would be slow anyway. Also, this
   // thread owns the sole reference to the layer tree. So we flatten the layer
   // tree into a picture and use that as the thread transport mechanism.
 
-  auto bounds_size = SkSize::Make(width, height);
-  auto picture = m_layerTree->Flatten(SkRect::MakeSize(bounds_size));
+  auto picture_bounds = SkISize::Make(width, height);
+  auto picture = m_layerTree->Flatten(SkRect::MakeWH(width, height));
+
   if (!picture) {
     // Already in Dart scope.
     return "Could not flatten scene into a layer tree.";
   }
+  
+  auto ui_task = fml::MakeCopyable([ui_task_runner,
+                                    image_callback = std::move(raw_image_callback),
+                                    unref_queue](
+                                       sk_sp<SkImage> raster_image) mutable {
+    // Send the raster image back to the UI thread for submission to the
+    // framework.
+    ui_task_runner->PostTask(fml::MakeCopyable([raster_image,
+                                                image_callback =
+                                                    std::move(image_callback),
+                                                unref_queue]() mutable {
 
-  auto resource_context = dart_state->GetResourceContext();
-  auto ui_task_runner = dart_state->GetTaskRunners().GetUITaskRunner();
-  auto unref_queue = dart_state->GetSkiaUnrefQueue();
+      if (!raster_image) {
+        image_callback(nullptr);
+        return;
+      }
 
-  // The picture has been prepared on the UI thread.
-  dart_state->GetTaskRunners().GetIOTaskRunner()->PostTask(
-      fml::MakeCopyable([picture = std::move(picture),                    //
-                         bounds_size,                                     //
-                         resource_context = std::move(resource_context),  //
-                         ui_task_runner = std::move(ui_task_runner),      //
-                         image_callback = std::move(raw_image_callback),  //
-                         unref_queue = std::move(unref_queue)             //
-  ]() mutable {
-        // Snapshot the picture on the IO thread that contains an optional
-        // GrContext.
-        auto image = CreateSceneSnapshot(resource_context.get(),
-                                         std::move(picture), bounds_size);
+      auto dart_image = CanvasImage::Create();
+      dart_image->set_image({std::move(raster_image), std::move(unref_queue)});
+      image_callback(dart_image);
+    }));
+  });
 
-        // Send the image back to the UI thread for submission back to the
-        // framework.
-        ui_task_runner->PostTask(
-            fml::MakeCopyable([image = std::move(image),                    //
-                               image_callback = std::move(image_callback),  //
-                               unref_queue = std::move(unref_queue)         //
-        ]() mutable {/*
-              auto dart_state = image_callback->dart_state().lock();
-              if (!dart_state) {
-                // The root isolate could have died in the meantime.
-                return;
-              }
-              tonic::DartState::Scope scope(dart_state);*/
+  auto gpu_task = fml::MakeCopyable([gpu_task_runner, picture, picture_bounds,
+                                     snapshot_delegate, ui_task]() {
+    gpu_task_runner->PostTask([snapshot_delegate, picture, picture_bounds,
+                               ui_task]() {
+      // Snapshot the picture on the GPU thread. This thread has access to the
+      // GPU contexts that may contain the sole references to texture backed
+      // images in the picture.
+      ui_task(snapshot_delegate->MakeRasterSnapshot(picture, picture_bounds));
+    });
+  });
 
-
-              if (!image) {
-                image_callback(nullptr);
-                return;
-              }
-
-              auto dart_image = CanvasImage::Create();
-              dart_image->set_image({std::move(image), std::move(unref_queue)});
-              image_callback(dart_image);
-            }));
-      }));
+  // Kick things off on the GPU.
+  gpu_task();
 
   return nullptr;
 }

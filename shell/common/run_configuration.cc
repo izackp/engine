@@ -1,4 +1,4 @@
-// Copyright 2017 The Flutter Authors. All rights reserved.
+// Copyright 2013 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -12,15 +12,16 @@
 namespace shell {
 
 RunConfiguration RunConfiguration::InferFromSettings(
-    const blink::Settings& settings) {
-  auto asset_manager = fml::MakeRefCounted<blink::AssetManager>();
+    const blink::Settings& settings,
+    fml::RefPtr<fml::TaskRunner> io_worker) {
+  auto asset_manager = std::make_shared<blink::AssetManager>();
 
   asset_manager->PushBack(std::make_unique<blink::DirectoryAssetBundle>(
       fml::Duplicate(settings.assets_dir)));
 
   asset_manager->PushBack(
-      std::make_unique<blink::DirectoryAssetBundle>(fml::OpenFile(
-          settings.assets_path.c_str(), fml::OpenPermission::kRead, true)));
+      std::make_unique<blink::DirectoryAssetBundle>(fml::OpenDirectory(
+          settings.assets_path.c_str(), false, fml::FilePermission::kRead)));
 
   return {asset_manager};
 }
@@ -60,7 +61,7 @@ void RunConfiguration::SetEntrypointAndLibrary(std::string entrypoint,
   entrypoint_library_ = std::move(library);
 }
 
-fml::RefPtr<blink::AssetManager> RunConfiguration::GetAssetManager() const {
+std::shared_ptr<blink::AssetManager> RunConfiguration::GetAssetManager() const {
   return asset_manager_;
 }
 

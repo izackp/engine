@@ -1,4 +1,4 @@
-// Copyright 2013 The Chromium Authors. All rights reserved.
+// Copyright 2013 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -214,8 +214,9 @@ public class FlutterMain {
 
             String appBundlePath = findAppBundlePath(applicationContext);
             String appStoragePath = PathUtils.getFilesDir(applicationContext);
+            String engineCachesPath = PathUtils.getCacheDirectory(applicationContext);
             nativeInit(applicationContext, shellArgs.toArray(new String[0]),
-                appBundlePath, appStoragePath);
+                appBundlePath, appStoragePath, engineCachesPath);
 
             sInitialized = true;
         } catch (Exception e) {
@@ -224,7 +225,7 @@ public class FlutterMain {
         }
     }
 
-    private static native void nativeInit(Context context, String[] args, String bundlePath, String appStoragePath);
+    private static native void nativeInit(Context context, String[] args, String bundlePath, String appStoragePath, String engineCachesPath);
     private static native void nativeRecordStartTimestamp(long initTimeMillis);
 
     /**

@@ -1,4 +1,4 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
+// Copyright 2013 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -307,6 +307,8 @@ using namespace shell;
     [self writeSize:typedData.elementCount];
     [self writeAlignment:typedData.elementSize];
     [self writeData:typedData.data];
+  } else if ([value isKindOfClass:[NSData class]]) {
+    [self writeValue:[FlutterStandardTypedData typedDataWithBytes:value]];
   } else if ([value isKindOfClass:[NSArray class]]) {
     NSArray* array = value;
     [self writeByte:FlutterStandardFieldList];

@@ -1,4 +1,4 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
+// Copyright 2013 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -10,6 +10,7 @@
 #include "third_party/skia/include/codec/SkCodec.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkImage.h"
+#include <map>
 
 namespace blink {
 
@@ -36,14 +37,15 @@ class Codec : public RefCountedDartWrappable<Codec> {
 
 class MultiFrameCodec : public Codec {
  public:
-  int frameCount() { return frameInfos_.size(); }
-  int repetitionCount() { return repetitionCount_; }
-  char* getNextFrame(void (*callback)(fml::RefPtr<FrameInfo> frameInfo));
+  int frameCount() override;
+  int repetitionCount() override;
+  char* getNextFrame(void (*callback)(fml::RefPtr<FrameInfo> frameInfo)) override;
 
  private:
-  MultiFrameCodec(std::unique_ptr<SkCodec> codec);
+  MultiFrameCodec(std::unique_ptr<SkCodec> codec,
+                  const float decodedCacheRatioCap);
 
-  ~MultiFrameCodec() {}
+  ~MultiFrameCodec();
 
   sk_sp<SkImage> GetNextFrameImage(fml::WeakPtr<GrContext> resourceContext);
 
@@ -57,9 +59,28 @@ class MultiFrameCodec : public Codec {
   const std::unique_ptr<SkCodec> codec_;
   int repetitionCount_;
   int nextFrameIndex_;
+  // The default max amount of memory to use for caching decoded animated image
+  // frames compared to total undecoded size.
+  const float decodedCacheRatioCap_;
+  size_t compressedSizeBytes_;
+  size_t decodedCacheSize_;
 
   std::vector<SkCodec::FrameInfo> frameInfos_;
-  std::vector<SkBitmap> frameBitmaps_;
+  // A struct linking the bitmap of a frame to whether it's required to render
+  // other dependent frames.
+  struct DecodedFrame {
+    std::unique_ptr<SkBitmap> bitmap_ = nullptr;
+    const bool required_;
+
+    DecodedFrame(bool required);
+    ~DecodedFrame();
+  };
+
+  // A cache of previously loaded bitmaps, indexed by the frame they belong to.
+  // Always holds at least the frames marked as required for reuse by
+  // [SkCodec::getFrameInfo()]. Will cache other non-essential frames until
+  // [decodedCacheSize_] : [compressedSize_] exceeds [decodedCacheRatioCap_].
+  std::map<int, std::unique_ptr<DecodedFrame>> frameBitmaps_;
 
   FML_FRIEND_MAKE_REF_COUNTED(MultiFrameCodec);
   FML_FRIEND_REF_COUNTED_THREAD_SAFE(MultiFrameCodec);
@@ -67,13 +88,13 @@ class MultiFrameCodec : public Codec {
 
 class SingleFrameCodec : public Codec {
  public:
-  int frameCount() { return 1; }
-  int repetitionCount() { return 0; }
-  char* getNextFrame(void (*callback)(fml::RefPtr<FrameInfo> frameInfo));
+  int frameCount() override;
+  int repetitionCount() override;
+  char* getNextFrame(void (*callback)(fml::RefPtr<FrameInfo> frameInfo)) override;
 
  private:
-  SingleFrameCodec(fml::RefPtr<FrameInfo> frame) : frame_(std::move(frame)) {}
-  ~SingleFrameCodec() {}
+  SingleFrameCodec(fml::RefPtr<FrameInfo> frame);
+  ~SingleFrameCodec();
 
   fml::RefPtr<FrameInfo> frame_;
 
@@ -86,7 +107,8 @@ char* InstantiateImageCodec(
   const uint8_t* list, 
   int count, 
   std::unique_ptr<ImageInfo> image_info, 
-  void (*callback)(fml::RefPtr<Codec> codec));
+  void (*callback)(fml::RefPtr<Codec> codec),
+  const float decodedCacheRatioCap);
 
 }  // namespace blink
 

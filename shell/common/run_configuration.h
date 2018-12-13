@@ -1,4 +1,4 @@
-// Copyright 2017 The Flutter Authors. All rights reserved.
+// Copyright 2013 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -19,7 +19,9 @@ namespace shell {
 
 class RunConfiguration {
  public:
-  static RunConfiguration InferFromSettings(const blink::Settings& settings);
+  static RunConfiguration InferFromSettings(
+      const blink::Settings& settings,
+      fml::RefPtr<fml::TaskRunner> io_worker = nullptr);
 
   RunConfiguration();
 
@@ -37,7 +39,7 @@ class RunConfiguration {
 
   void SetEntrypointAndLibrary(std::string entrypoint, std::string library);
 
-  fml::RefPtr<blink::AssetManager> GetAssetManager() const;
+  std::shared_ptr<blink::AssetManager> GetAssetManager() const;
 
   const std::string& GetEntrypoint() const;
 

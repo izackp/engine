@@ -1,4 +1,4 @@
-// Copyright 2015 The Chromium Authors. All rights reserved.
+// Copyright 2013 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -38,7 +38,10 @@ class Paragraph : public RefCountedDartWrappable<Paragraph> {
   void layout(double width);
   void paint(Canvas* canvas, double x, double y);
 
-  std::vector<TextBox> getRectsForRange(unsigned start, unsigned end);
+  std::vector<TextBox> getRectsForRange(unsigned start,
+                                        unsigned end,
+                                        unsigned boxHeightStyle,
+                                        unsigned boxWidthStyle);
   txt::Paragraph::PositionWithAffinity getPositionForOffset(double dx, double dy);
   txt::Paragraph::Range<size_t> getWordBoundary(unsigned offset);
 

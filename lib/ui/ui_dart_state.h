@@ -1,4 +1,4 @@
-// Copyright 2015 The Chromium Authors. All rights reserved.
+// Copyright 2013 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -25,6 +25,8 @@ class UIDartState : public std::enable_shared_from_this<UIDartState> {
  public:
   static UIDartState* Current();
 
+  void SetDebugName(const std::string name);
+
   const std::string& debug_name() const { return debug_name_; }
 
   const std::string& logger_prefix() const { return logger_prefix_; }
@@ -35,6 +37,8 @@ class UIDartState : public std::enable_shared_from_this<UIDartState> {
 
   fml::RefPtr<flow::SkiaUnrefQueue> GetSkiaUnrefQueue() const;
 
+  fml::WeakPtr<SnapshotDelegate> GetSnapshotDelegate() const;
+
   fml::WeakPtr<GrContext> GetResourceContext() const;
 
   template <class T>
@@ -42,7 +46,7 @@ class UIDartState : public std::enable_shared_from_this<UIDartState> {
     if (!object) {
       return {};
     }
-    auto state = UIDartState::Current();
+    auto* state = UIDartState::Current();
     FML_DCHECK(state);
     auto queue = state->GetSkiaUnrefQueue();
     return {std::move(object), std::move(queue)};
@@ -51,6 +55,7 @@ class UIDartState : public std::enable_shared_from_this<UIDartState> {
   UIDartState(TaskRunners task_runners,
               TaskObserverAdd add_callback,
               TaskObserverRemove remove_callback,
+              fml::WeakPtr<SnapshotDelegate> snapshot_delegate,
               fml::WeakPtr<GrContext> resource_context,
               fml::RefPtr<flow::SkiaUnrefQueue> skia_unref_queue,
               std::string logger_prefix);
@@ -64,6 +69,7 @@ class UIDartState : public std::enable_shared_from_this<UIDartState> {
   const TaskRunners task_runners_;
   const TaskObserverAdd add_callback_;
   const TaskObserverRemove remove_callback_;
+  fml::WeakPtr<SnapshotDelegate> snapshot_delegate_;
   fml::WeakPtr<GrContext> resource_context_;
   const std::string logger_prefix_;
   std::string debug_name_;

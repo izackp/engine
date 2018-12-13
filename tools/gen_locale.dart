@@ -1,4 +1,4 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
+// Copyright 2013 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -40,7 +40,7 @@ Map<String, List<String>> parseSection(String section) {
 
 Future<Null> main() async {
   final HttpClient client = new HttpClient();
-  final String body = (await (await (await client.getUrl(Uri.parse(registry))).close()).transform(UTF8.decoder).toList()).join('');
+  final String body = (await (await (await client.getUrl(Uri.parse(registry))).close()).transform(utf8.decoder).toList()).join('');
   final List<Map<String, List<String>>> sections = body.split('%%').map<Map<String, List<String>>>(parseSection).toList();
   final Map<String, List<String>> outputs = <String, List<String>>{'language': <String>[], 'region': <String>[]};
   String fileDate;
