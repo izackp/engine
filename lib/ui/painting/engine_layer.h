@@ -5,32 +5,25 @@
 #ifndef FLUTTER_LIB_UI_PAINTING_ENGINE_LAYER_H_
 #define FLUTTER_LIB_UI_PAINTING_ENGINE_LAYER_H_
 
-#include "flutter/lib/ui/dart_wrapper.h"
-
 #include "flutter/flow/layers/layer.h"
-
-namespace tonic {
-class DartLibraryNatives;
-}  // namespace tonic
+#include "flutter/fml/memory/ref_counted.h"
 
 namespace blink {
 
 class EngineLayer;
 
-class EngineLayer : public RefCountedDartWrappable<EngineLayer> {
-  DEFINE_WRAPPERTYPEINFO();
+class EngineLayer : public fml::RefCountedThreadSafe<EngineLayer> {
+  //DEFINE_WRAPPERTYPEINFO();
 
  public:
-  ~EngineLayer() override;
+  ~EngineLayer();
 
-  size_t GetAllocationSize() override;
+  size_t GetAllocationSize();
 
   static fml::RefPtr<EngineLayer> MakeRetained(
       std::shared_ptr<flow::ContainerLayer> layer) {
     return fml::MakeRefCounted<EngineLayer>(layer);
   }
-
-  static void RegisterNatives(tonic::DartLibraryNatives* natives);
 
   std::shared_ptr<flow::ContainerLayer> Layer() const { return layer_; }
 

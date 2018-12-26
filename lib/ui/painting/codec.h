@@ -5,8 +5,8 @@
 #ifndef FLUTTER_LIB_UI_PAINTING_CODEC_H_
 #define FLUTTER_LIB_UI_PAINTING_CODEC_H_
 
-#include "flutter/lib/ui/dart_wrapper.h"
 #include "flutter/lib/ui/painting/frame_info.h"
+#include "flutter/fml/memory/ref_counted.h"
 #include "third_party/skia/include/codec/SkCodec.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkImage.h"
@@ -23,7 +23,7 @@ struct ImageInfo {
 // A handle to an SkCodec object.
 //
 // Doesn't mirror SkCodec's API but provides a simple sequential access API.
-class Codec : public RefCountedDartWrappable<Codec> {
+class Codec : public fml::RefCountedThreadSafe<Codec> {
   //DEFINE_WRAPPERTYPEINFO();
 
  public:
@@ -32,7 +32,6 @@ class Codec : public RefCountedDartWrappable<Codec> {
   virtual char* getNextFrame(void (*callback)(fml::RefPtr<FrameInfo> frameInfo)) = 0;
   void dispose();
 
-  //static void RegisterNatives(tonic::DartLibraryNatives* natives);
 };
 
 class MultiFrameCodec : public Codec {

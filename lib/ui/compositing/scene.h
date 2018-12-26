@@ -9,15 +9,15 @@
 #include <memory>
 
 #include "flutter/flow/layers/layer_tree.h"
-#include "flutter/lib/ui/dart_wrapper.h"
 #include "flutter/lib/ui/painting/image.h"
+#include "flutter/fml/memory/ref_counted.h"
 #include "third_party/skia/include/core/SkPicture.h"
 
 namespace blink {
 
 typedef void (*ImageCallback) (fml::RefPtr<CanvasImage>);
 
-class Scene : public RefCountedDartWrappable<Scene> {
+class Scene : public fml::RefCountedThreadSafe<Scene> {
   FML_FRIEND_MAKE_REF_COUNTED(Scene);
 
  public:

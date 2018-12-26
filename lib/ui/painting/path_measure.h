@@ -5,8 +5,8 @@
 #ifndef FLUTTER_LIB_UI_PAINTING_PATH_MEASURE_H_
 #define FLUTTER_LIB_UI_PAINTING_PATH_MEASURE_H_
 
-#include "flutter/lib/ui/dart_wrapper.h"
 #include "flutter/lib/ui/painting/path.h"
+#include "flutter/fml/memory/ref_counted.h"
 #include "third_party/skia/include/core/SkPath.h"
 #include "third_party/skia/include/core/SkPathMeasure.h"
 
@@ -15,7 +15,7 @@
 
 namespace blink {
 
-class CanvasPathMeasure : public RefCountedDartWrappable<CanvasPathMeasure> {
+class CanvasPathMeasure : public fml::RefCountedThreadSafe<CanvasPathMeasure> {
 
   FML_FRIEND_MAKE_REF_COUNTED(CanvasPathMeasure);
 

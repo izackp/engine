@@ -5,13 +5,13 @@
 #ifndef FLUTTER_LIB_UI_SEMANTICS_SEMANTICS_UPDATE_BUILDER_H_
 #define FLUTTER_LIB_UI_SEMANTICS_SEMANTICS_UPDATE_BUILDER_H_
 
-#include "flutter/lib/ui/dart_wrapper.h"
+#include "flutter/fml/memory/ref_counted.h"
 #include "flutter/lib/ui/semantics/semantics_update.h"
 
 namespace blink {
 
 class SemanticsUpdateBuilder
-    : public RefCountedDartWrappable<SemanticsUpdateBuilder> {
+    : public fml::RefCountedThreadSafe<SemanticsUpdateBuilder> {
   FML_FRIEND_MAKE_REF_COUNTED(SemanticsUpdateBuilder);
 
  public:

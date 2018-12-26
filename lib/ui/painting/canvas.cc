@@ -16,53 +16,7 @@
 #include "third_party/skia/include/core/SkRSXform.h"
 
 namespace blink {
-/*
-static void Canvas_constructor(Dart_NativeArguments args) {
-  DartCallConstructor(&Canvas::Create, args);
-}
 
-IMPLEMENT_WRAPPERTYPEINFO(ui, Canvas);
-
-#define FOR_EACH_BINDING(V)         \
-  V(Canvas, save)                   \
-  V(Canvas, saveLayerWithoutBounds) \
-  V(Canvas, saveLayer)              \
-  V(Canvas, restore)                \
-  V(Canvas, getSaveCount)           \
-  V(Canvas, translate)              \
-  V(Canvas, scale)                  \
-  V(Canvas, rotate)                 \
-  V(Canvas, skew)                   \
-  V(Canvas, transform)              \
-  V(Canvas, clipRect)               \
-  V(Canvas, clipRRect)              \
-  V(Canvas, clipPath)               \
-  V(Canvas, drawColor)              \
-  V(Canvas, drawLine)               \
-  V(Canvas, drawPaint)              \
-  V(Canvas, drawRect)               \
-  V(Canvas, drawRRect)              \
-  V(Canvas, drawDRRect)             \
-  V(Canvas, drawOval)               \
-  V(Canvas, drawCircle)             \
-  V(Canvas, drawArc)                \
-  V(Canvas, drawPath)               \
-  V(Canvas, drawImage)              \
-  V(Canvas, drawImageRect)          \
-  V(Canvas, drawImageNine)          \
-  V(Canvas, drawPicture)            \
-  V(Canvas, drawPoints)             \
-  V(Canvas, drawVertices)           \
-  V(Canvas, drawAtlas)              \
-  V(Canvas, drawShadow)
-
-FOR_EACH_BINDING(DART_NATIVE_CALLBACK)
-
-void Canvas::RegisterNatives(tonic::DartLibraryNatives* natives) {
-  natives->Register({{"Canvas_constructor", Canvas_constructor, 6, true},
-                     FOR_EACH_BINDING(DART_REGISTER_NATIVE)});
-}
-*/
 fml::RefPtr<Canvas> Canvas::Create(PictureRecorder* recorder,
                                    double left,
                                    double top,

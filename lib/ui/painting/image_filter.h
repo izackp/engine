@@ -5,14 +5,14 @@
 #ifndef FLUTTER_LIB_UI_PAINTING_IMAGE_FILTER_H_
 #define FLUTTER_LIB_UI_PAINTING_IMAGE_FILTER_H_
 
-#include "flutter/lib/ui/dart_wrapper.h"
 #include "flutter/lib/ui/painting/image.h"
 #include "flutter/lib/ui/painting/picture.h"
+#include "flutter/fml/memory/ref_counted.h"
 #include "third_party/skia/include/core/SkImageFilter.h"
 
 namespace blink {
 
-class ImageFilter : public RefCountedDartWrappable<ImageFilter> {
+class ImageFilter : public fml::RefCountedThreadSafe<ImageFilter> {
   FML_FRIEND_MAKE_REF_COUNTED(ImageFilter);
 
  public:

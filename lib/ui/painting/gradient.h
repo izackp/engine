@@ -7,7 +7,6 @@
 
 #include <vector>
 
-#include "flutter/lib/ui/dart_wrapper.h"
 #include "flutter/lib/ui/painting/shader.h"
 #include "third_party/skia/include/effects/SkGradientShader.h"
 

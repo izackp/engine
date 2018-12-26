@@ -7,12 +7,12 @@
 
 #include <stdint.h>
 
-#include "flutter/lib/ui/dart_wrapper.h"
+#include "flutter/fml/memory/ref_counted.h"
 #include "flutter/fml/build_config.h"
 
 namespace blink {
 
-class SceneHost : public RefCountedDartWrappable<SceneHost> {
+class SceneHost : public fml::RefCountedThreadSafe<SceneHost> {
   FML_FRIEND_MAKE_REF_COUNTED(SceneHost);
 
  public:

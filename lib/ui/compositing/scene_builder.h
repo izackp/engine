@@ -11,16 +11,17 @@
 
 #include "flutter/lib/ui/compositing/scene.h"
 #include "flutter/lib/ui/compositing/scene_host.h"
-#include "flutter/lib/ui/dart_wrapper.h"
 #include "flutter/lib/ui/painting/engine_layer.h"
 #include "flutter/lib/ui/painting/image_filter.h"
 #include "flutter/lib/ui/painting/path.h"
 #include "flutter/lib/ui/painting/picture.h"
 #include "flutter/lib/ui/painting/shader.h"
 
+#include "flutter/fml/memory/ref_counted.h"
+
 namespace blink {
 
-class SceneBuilder : public RefCountedDartWrappable<SceneBuilder> {
+class SceneBuilder : public fml::RefCountedThreadSafe<SceneBuilder> {
   FML_FRIEND_MAKE_REF_COUNTED(SceneBuilder);
 
  public:

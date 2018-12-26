@@ -10,7 +10,6 @@ source_set("ui") {
     "compositing/scene_builder.h",
     "compositing/scene_host.cc",
     "compositing/scene_host.h",
-    "dart_wrapper.h",
     "painting/canvas.cc",
     "painting/canvas.h",
     "painting/codec.cc",

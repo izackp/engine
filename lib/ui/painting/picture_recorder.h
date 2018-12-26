@@ -5,20 +5,20 @@
 #ifndef FLUTTER_LIB_UI_PAINTING_PICTURE_RECORDER_H_
 #define FLUTTER_LIB_UI_PAINTING_PICTURE_RECORDER_H_
 
-#include "flutter/lib/ui/dart_wrapper.h"
+#include "flutter/fml/memory/ref_counted.h"
 #include "third_party/skia/include/core/SkPictureRecorder.h"
 
 namespace blink {
 class Canvas;
 class Picture;
 
-class PictureRecorder : public RefCountedDartWrappable<PictureRecorder> {
+class PictureRecorder : public fml::RefCountedThreadSafe<PictureRecorder> {
   FML_FRIEND_MAKE_REF_COUNTED(PictureRecorder);
 
  public:
   static fml::RefPtr<PictureRecorder> Create();
 
-  ~PictureRecorder() override;
+  ~PictureRecorder();
 
   SkCanvas* BeginRecording(SkRect bounds);
   fml::RefPtr<Picture> endRecording();

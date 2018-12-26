@@ -141,74 +141,7 @@ void InitCodecAndInvokeCodecCallback(
         InvokeCodecCallback(std::move(codec), callback, trace_id);
       }));
 }
-/*
-bool ConvertImageInfo(Dart_Handle image_info_handle,
-                      Dart_NativeArguments args,
-                      ImageInfo* image_info) {
-  Dart_Handle width_handle = Dart_GetField(image_info_handle, ToDart("width"));
-  if (!Dart_IsInteger(width_handle)) {
-    Dart_SetReturnValue(args, ToDart("ImageInfo.width must be an integer"));
-    return false;
-  }
-  Dart_Handle height_handle =
-      Dart_GetField(image_info_handle, ToDart("height"));
-  if (!Dart_IsInteger(height_handle)) {
-    Dart_SetReturnValue(args, ToDart("ImageInfo.height must be an integer"));
-    return false;
-  }
-  Dart_Handle format_handle =
-      Dart_GetField(image_info_handle, ToDart("format"));
-  if (!Dart_IsInteger(format_handle)) {
-    Dart_SetReturnValue(args, ToDart("ImageInfo.format must be an integer"));
-    return false;
-  }
-  Dart_Handle row_bytes_handle =
-      Dart_GetField(image_info_handle, ToDart("rowBytes"));
-  if (!Dart_IsInteger(row_bytes_handle)) {
-    Dart_SetReturnValue(args, ToDart("ImageInfo.rowBytes must be an integer"));
-    return false;
-  }
 
-  PixelFormat pixel_format = static_cast<PixelFormat>(
-      tonic::DartConverter<int>::FromDart(format_handle));
-  SkColorType color_type = kUnknown_SkColorType;
-  switch (pixel_format) {
-    case kRGBA8888:
-      color_type = kRGBA_8888_SkColorType;
-      break;
-    case kBGRA8888:
-      color_type = kBGRA_8888_SkColorType;
-      break;
-  }
-  if (color_type == kUnknown_SkColorType) {
-    Dart_SetReturnValue(args, ToDart("Invalid pixel format"));
-    return false;
-  }
-
-  int width = tonic::DartConverter<int>::FromDart(width_handle);
-  if (width <= 0) {
-    Dart_SetReturnValue(args, ToDart("width must be greater than zero"));
-    return false;
-  }
-  int height = tonic::DartConverter<int>::FromDart(height_handle);
-  if (height <= 0) {
-    Dart_SetReturnValue(args, ToDart("height must be greater than zero"));
-    return false;
-  }
-  image_info->sk_info =
-      SkImageInfo::Make(width, height, color_type, kPremul_SkAlphaType);
-  image_info->row_bytes =
-      tonic::DartConverter<size_t>::FromDart(row_bytes_handle);
-
-  if (image_info->row_bytes < image_info->sk_info.minRowBytes()) {
-    Dart_SetReturnValue(
-        args, ToDart("rowBytes does not match the width of the image"));
-    return false;
-  }
-
-  return true;
-}
-*/
 char* InstantiateImageCodec(const uint8_t* list, int count, std::unique_ptr<ImageInfo> image_info, void (*callback)(fml::RefPtr<Codec> codec), const float decodedCacheRatioCap) {
   static size_t trace_counter = 1;
   const size_t trace_id = trace_counter++;
@@ -472,12 +405,5 @@ char* SingleFrameCodec::getNextFrame(void (*callback)(fml::RefPtr<FrameInfo> fra
   (*callback) (frame_);
   return nullptr;
 }
-/*
-void Codec::RegisterNatives(tonic::DartLibraryNatives* natives) {
-  natives->Register({
-      {"instantiateImageCodec", InstantiateImageCodec, 4, true},
-  });
-  natives->Register({FOR_EACH_BINDING(DART_REGISTER_NATIVE)});
-}
-*/
+
 }  // namespace blink

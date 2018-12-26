@@ -6,14 +6,14 @@
 #define FLUTTER_LIB_UI_PAINTING_IMAGE_H_
 
 #include "flutter/flow/skia_gpu_object.h"
-#include "flutter/lib/ui/dart_wrapper.h"
 #include "flutter/lib/ui/ui_dart_state.h"
+#include "flutter/fml/memory/ref_counted.h"
 #include "third_party/skia/include/core/SkImage.h"
 #include "flutter/lib/ui/painting/image_encoding.h"
 
 namespace blink {
 
-class CanvasImage final : public RefCountedDartWrappable<CanvasImage> {
+class CanvasImage final : public fml::RefCountedThreadSafe<CanvasImage> {
   //DEFINE_WRAPPERTYPEINFO();
   FML_FRIEND_MAKE_REF_COUNTED(CanvasImage);
 

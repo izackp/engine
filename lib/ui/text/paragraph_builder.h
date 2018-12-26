@@ -6,7 +6,7 @@
 #define FLUTTER_LIB_UI_TEXT_PARAGRAPH_BUILDER_H_
 
 #include <memory>
-#include "flutter/lib/ui/dart_wrapper.h"
+#include "flutter/fml/memory/ref_counted.h"
 #include "flutter/lib/ui/text/paragraph.h"
 #include "flutter/third_party/txt/src/txt/paragraph_builder.h"
 
@@ -14,7 +14,7 @@ namespace blink {
 
 class Paragraph;
 
-class ParagraphBuilder : public RefCountedDartWrappable<ParagraphBuilder> {
+class ParagraphBuilder : public fml::RefCountedThreadSafe<ParagraphBuilder> {
 
   FML_FRIEND_MAKE_REF_COUNTED(ParagraphBuilder);
 
