@@ -37,8 +37,6 @@ class WindowClient {
   virtual void UpdateSemantics(SemanticsUpdate* update) = 0;
   virtual void HandlePlatformMessage(fml::RefPtr<PlatformMessage> message) = 0;
   virtual FontCollection& GetFontCollection() = 0;
-  virtual void UpdateIsolateDescription(const std::string isolate_name,
-                                        int64_t isolate_port) = 0;
 
  protected:
   virtual ~WindowClient();
@@ -57,7 +55,6 @@ class Window final {
   void UpdateWindowMetrics(const ViewportMetrics& metrics);
   void UpdateLocales(const std::vector<std::string>& locales);
   void UpdateUserSettingsData(const std::string& data);
-  void UpdateSemanticsEnabled(bool enabled);
   void UpdateAccessibilityFeatures(int32_t flags);
   void DispatchPlatformMessage(fml::RefPtr<PlatformMessage> message);
   void DispatchPointerDataPacket(const PointerDataPacket& packet);

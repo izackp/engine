@@ -42,6 +42,7 @@ RuntimeController::RuntimeController(
       root_isolate_(task_runners_,
                           nullptr,
                           nullptr,
+                          p_snapshot_delegate,
                           resource_context_,
                           unref_queue_,
                           nullptr) {
@@ -118,7 +119,7 @@ bool RuntimeController::SetSemanticsEnabled(bool enabled) {
   window_data_.semantics_enabled = enabled;
 
   if (auto* window = GetWindowIfAvailable()) {
-    window->UpdateSemanticsEnabled(window_data_.semantics_enabled);
+    //window->UpdateSemanticsEnabled(window_data_.semantics_enabled);
     return true;
   }
 

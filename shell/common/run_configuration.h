@@ -14,6 +14,7 @@
 #include "flutter/fml/macros.h"
 #include "flutter/fml/mapping.h"
 #include "flutter/fml/unique_fd.h"
+#include "flutter/fml/task_runner.h"
 
 namespace shell {
 
@@ -25,7 +26,7 @@ class RunConfiguration {
 
   RunConfiguration();
 
-  RunConfiguration(fml::RefPtr<blink::AssetManager> asset_manager);
+  RunConfiguration(std::shared_ptr<blink::AssetManager> asset_manager);
 
   RunConfiguration(RunConfiguration&&);
 
@@ -46,7 +47,7 @@ class RunConfiguration {
   const std::string& GetEntrypointLibrary() const;
 
  private:
-  fml::RefPtr<blink::AssetManager> asset_manager_;
+  std::shared_ptr<blink::AssetManager> asset_manager_;
   std::string entrypoint_ = "main";
   std::string entrypoint_library_ = "";
 

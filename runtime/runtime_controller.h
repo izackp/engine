@@ -131,10 +131,6 @@ class RuntimeController final : public WindowClient {
   // |blink::WindowClient|
   FontCollection& GetFontCollection() override;
 
-  // |blink::WindowClient|
-  void UpdateIsolateDescription(const std::string isolate_name,
-                                int64_t isolate_port) override;
-
   FML_DISALLOW_COPY_AND_ASSIGN(RuntimeController);
 };
 

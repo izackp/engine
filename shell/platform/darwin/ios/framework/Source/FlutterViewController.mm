@@ -915,27 +915,6 @@ constexpr CGFloat kStandardStatusBarHeight = 20.0;
   [_engine.get() textureFrameAvailable:textureId];
 }
 
-<<<<<<< HEAD
-static blink::Settings DefaultSettingsForProcess() {
-  auto command_line = shell::CommandLineFromNSProcessInfo();
-
-  // Precedence:
-  // 1. Settings from the specified NSBundle.
-  // 2. Settings passed explicitly via command-line arguments.
-
-  auto settings = shell::SettingsFromCommandLine(command_line);
-
-  settings.task_observer_add = [](intptr_t key, fml::closure callback) {
-    fml::MessageLoop::GetCurrent().AddTaskObserver(key, std::move(callback));
-  };
-
-  settings.task_observer_remove = [](intptr_t key) {
-    fml::MessageLoop::GetCurrent().RemoveTaskObserver(key);
-  };
-
-  return settings;
-=======
->>>>>>> master
 }
 
 @end

@@ -20,7 +20,6 @@
 #include "flutter/runtime/start_up.h"
 #include "flutter/shell/common/shell.h"
 #include "flutter/shell/common/switches.h"
-#include "third_party/dart/runtime/include/dart_tools_api.h"
 
 namespace shell {
 

@@ -41,13 +41,6 @@
   ::fml::tracing::ScopedInstantEnd __FML__TOKEN_CAT__2(__trace_end_, \
                                                        __LINE__)(name);
 
-// This macro has the FML_ prefix so that it does not collide with the macros
-// from trace/event.h on Fuchsia.
-//
-// TODO(chinmaygarde): All macros here should have the FML prefix.
-#define FML_TRACE_COUNTER(category_group, name, count) \
-  ::fml::tracing::TraceCounter(category_group, name, count);
-
 #define TRACE_EVENT0(category_group, name)           \
   ::fml::tracing::TraceEvent0(category_group, name); \
   __FML__AUTO_TRACE_END(name)

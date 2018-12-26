@@ -15,6 +15,7 @@
 #include "flutter/flow/skia_gpu_object.h"
 #include "flutter/fml/build_config.h"
 #include "flutter/fml/memory/weak_ptr.h"
+#include "flutter/lib/ui/snapshot_delegate.h"
 #include "third_party/skia/include/gpu/GrContext.h"
 
 namespace blink {
@@ -24,8 +25,6 @@ class Window;
 class UIDartState : public std::enable_shared_from_this<UIDartState> {
  public:
   static UIDartState* Current();
-
-  void SetDebugName(const std::string name);
 
   const std::string& debug_name() const { return debug_name_; }
 

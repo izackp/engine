@@ -19,7 +19,7 @@ class ContainerLayer : public Layer {
 
   void Preroll(PrerollContext* context, const SkMatrix& matrix) override;
 
-  const std::vector<std::unique_ptr<Layer>>& layers() const { return layers_; }
+  const std::vector<std::shared_ptr<Layer>>& layers() const { return layers_; }
 
  protected:
   void PrerollChildren(PrerollContext* context,

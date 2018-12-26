@@ -27,10 +27,10 @@ RunConfiguration RunConfiguration::InferFromSettings(
 }
 
 RunConfiguration::RunConfiguration()
-    : RunConfiguration(fml::MakeRefCounted<blink::AssetManager>()) {}
+    : RunConfiguration(std::shared_ptr<blink::AssetManager>()) {}
 
 RunConfiguration::RunConfiguration(
-    fml::RefPtr<blink::AssetManager> asset_manager)
+    std::shared_ptr<blink::AssetManager> asset_manager)
     : asset_manager_(std::move(asset_manager)) {}
 
 RunConfiguration::RunConfiguration(RunConfiguration&&) = default;

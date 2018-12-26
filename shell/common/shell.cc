@@ -111,6 +111,7 @@ std::unique_ptr<Shell> Shell::CreateShellOnPlatformThread(
                          vsync_waiter = std::move(vsync_waiter),            //
                          snapshot_delegate = std::move(snapshot_delegate),  //
                          resource_context = std::move(resource_context),    //
+                         unref_queue = std::move(unref_queue)
   ]() mutable {
         const auto& task_runners = shell->GetTaskRunners();
 
@@ -689,15 +690,6 @@ void Shell::OnPreEngineRestart() {
   // This is blocking as any embedded platform views has to be flushed before
   // we re-run the Dart code.
   latch.Wait();
-}
-
-// |shell::Engine::Delegate|
-void Shell::UpdateIsolateDescription(const std::string isolate_name,
-                                     int64_t isolate_port) {
-  if (auto vm = blink::DartVM::ForProcessIfInitialized()) {
-    Handler::Description description(isolate_port, isolate_name);
-    vm->GetServiceProtocol().SetHandlerDescription(this, description);
-  }
 }
 
 // |blink::ServiceProtocol::Handler|

@@ -9,6 +9,8 @@
 
 namespace blink {
 
+    static UIDartState* lastInstance_ = nullptr; //TODO: We subsituted a reference from DartState which held a shared pointer reference to its self. Implying it kept itself alive which may or may not be necessary (avoid possible crash?)s
+
 UIDartState::UIDartState(TaskRunners task_runners,
                          TaskObserverAdd add_callback,
                          TaskObserverRemove remove_callback,
@@ -24,26 +26,22 @@ UIDartState::UIDartState(TaskRunners task_runners,
       logger_prefix_(std::move(logger_prefix)),
       skia_unref_queue_(std::move(skia_unref_queue)) {
   AddOrRemoveTaskObserver(true /* add */);
+  lastInstance_ = this;
 }
 
 UIDartState::~UIDartState() {
   AddOrRemoveTaskObserver(false /* remove */);
-}
-
-void UIDartState::SetDebugName(const std::string debug_name) {
-  debug_name_ = debug_name;
-  if (window_)
-    window_->client()->UpdateIsolateDescription(debug_name_, main_port_);
+  if (lastInstance_ == this) {
+    lastInstance_ = nullptr;
+  }
 }
 
 UIDartState* UIDartState::Current() {
-  return nullptr; //TODO: Fix //static_cast<UIDartState*>(DartState::Current());
+  return lastInstance_;
 }
 
 void UIDartState::SetWindow(std::unique_ptr<Window> window) {
   window_ = std::move(window);
-  if (window_)
-    window_->client()->UpdateIsolateDescription(debug_name_, main_port_);
 }
 
 const TaskRunners& UIDartState::GetTaskRunners() const {

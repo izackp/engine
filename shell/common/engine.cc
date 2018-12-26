@@ -21,7 +21,6 @@
 #include "flutter/shell/common/platform_view.h"
 #include "flutter/shell/common/shell.h"
 #include "rapidjson/document.h"
-#include "third_party/dart/runtime/include/dart_tools_api.h"
 #include "third_party/skia/include/core/SkCanvas.h"
 #include "third_party/skia/include/core/SkPictureRecorder.h"
 
@@ -104,7 +103,7 @@ Engine::RunStatus Engine::Run(RunConfiguration configuration) {
     return RunStatus::Failure;
   }
 
-  return true;
+  return RunStatus::Success;
 }
 
 void Engine::BeginFrame(fml::TimePoint frame_time) {
@@ -114,7 +113,7 @@ void Engine::BeginFrame(fml::TimePoint frame_time) {
 
 void Engine::NotifyIdle(int64_t deadline) {
   TRACE_EVENT1("flutter", "Engine::NotifyIdle", "deadline_now_delta",
-               std::to_string(deadline - Dart_TimelineGetMicros()).c_str());
+               std::to_string(deadline).c_str());// TODO: Properly offset deadline
   runtime_controller_->NotifyIdle(deadline);
 }
 
@@ -312,11 +311,6 @@ void Engine::HandlePlatformMessage(
   } else {
     delegate_.OnEngineHandlePlatformMessage(std::move(message));
   }
-}
-
-void Engine::UpdateIsolateDescription(const std::string isolate_name,
-                                      int64_t isolate_port) {
-  delegate_.UpdateIsolateDescription(isolate_name, isolate_port);
 }
 
 blink::FontCollection& Engine::GetFontCollection() {

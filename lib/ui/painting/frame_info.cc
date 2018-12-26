@@ -6,5 +6,8 @@
 #include "flutter/lib/ui/painting/frame_info.h"
 
 namespace blink {
+FrameInfo::FrameInfo(fml::RefPtr<CanvasImage> image, int durationMillis)
+    : image_(std::move(image)), durationMillis_(durationMillis) {}
 
+FrameInfo::~FrameInfo(){};
 }  // namespace blink

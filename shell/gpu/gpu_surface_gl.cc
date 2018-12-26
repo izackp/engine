@@ -79,7 +79,7 @@ GPUSurfaceGL::GPUSurfaceGL(GPUSurfaceGLDelegate* delegate)
     }
   }
 
-  auto context = GrContext::MakeGL(glInterface, options);
+  auto context = GrContext::MakeGL(interface, options);
 
   if (context == nullptr) {
     FML_LOG(ERROR) << "Failed to setup Skia Gr context.";
