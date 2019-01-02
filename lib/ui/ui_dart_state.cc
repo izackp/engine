@@ -9,7 +9,7 @@
 
 namespace blink {
 
-    static UIDartState* lastInstance_ = nullptr; //TODO: We subsituted a reference from DartState which held a shared pointer reference to its self. Implying it kept itself alive which may or may not be necessary (avoid possible crash?)s
+static UIDartState* lastInstance_ = nullptr; //TODO: We subsituted a reference from DartState which held a shared pointer reference to its self. Implying it kept itself alive which may or may not be necessary (avoid possible crash?)s
 
 UIDartState::UIDartState(TaskRunners task_runners,
                          TaskObserverAdd add_callback,

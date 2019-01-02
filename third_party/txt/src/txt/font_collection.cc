@@ -17,11 +17,7 @@
 #include "font_collection.h"
 
 #include <list>
-#include <memory>
 #include <mutex>
-#include <set>
-#include <string>
-#include <unordered_map>
 #include <vector>
 #include "flutter/fml/logging.h"
 #include "font_skia.h"
